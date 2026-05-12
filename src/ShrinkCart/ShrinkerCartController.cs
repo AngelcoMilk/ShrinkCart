@@ -35,6 +35,8 @@ namespace ShrinkCart
         private static readonly Dictionary<int, float> ReshrinkCooldownUntil =
             new Dictionary<int, float>();
 
+        private static readonly HashSet<int> PermanentlyExcludedObjectIds = new HashSet<int>();
+
         private static readonly List<int> RestoreIds = new List<int>(16);
         private static readonly List<int> ExpiredCooldownIds = new List<int>(16);
         private static readonly List<GameObject> RestoreTargets = new List<GameObject>(16);
@@ -48,6 +50,9 @@ namespace ShrinkCart
         private static readonly FieldInfo PhysGrabObjectIsGunField =
             typeof(PhysGrabObject).GetField("isGun", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+        private static readonly FieldInfo PhysGrabCartPhysGrabObjectField =
+            typeof(PhysGrabCart).GetField("physGrabObject", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
         private static float _nextTickTime;
 
         internal static void Reset()
@@ -55,6 +60,7 @@ namespace ShrinkCart
             TrackedObjects.Clear();
             ShrinkDataCache.Clear();
             ReshrinkCooldownUntil.Clear();
+            PermanentlyExcludedObjectIds.Clear();
             RestoreIds.Clear();
             ExpiredCooldownIds.Clear();
             RestoreTargets.Clear();
@@ -69,16 +75,13 @@ namespace ShrinkCart
                 return;
             }
 
-            ShrinkCategory category = ShrinkCategory.Fallback;
-            float factor = 1.0f;
-            bool canShrink = ModConfig.CartShrinkingEnabled.Value && TryGetShrinkData(item, out category, out factor);
-            if (canShrink)
-            {
-                CartScaleVisualEffects.MarkCartObject(item.gameObject);
-            }
-
             if (!IsHostOrSingleplayer())
             {
+                if (ShouldMarkPotentialClientCartScale(item))
+                {
+                    CartScaleVisualEffects.MarkCartObject(item.gameObject);
+                }
+
                 return;
             }
 
@@ -86,6 +89,14 @@ namespace ShrinkCart
             {
                 CartScaleVisualEffects.UnmarkCartObject(item.gameObject);
                 return;
+            }
+
+            ShrinkCategory category = ShrinkCategory.Fallback;
+            float factor = 1.0f;
+            bool canShrink = ModConfig.CartShrinkingEnabled.Value && TryGetShrinkData(item, out category, out factor);
+            if (canShrink)
+            {
+                CartScaleVisualEffects.MarkCartObject(item.gameObject);
             }
 
             if (canShrink)
@@ -342,10 +353,17 @@ namespace ShrinkCart
                 return false;
             }
 
+            int id = item.gameObject.GetInstanceID();
+            if (PermanentlyExcludedObjectIds.Contains(id))
+            {
+                return false;
+            }
+
             string cleanName = CleanName(item.name);
 
             if (IsPermanentlyExcludedCartItem(item, cleanName))
             {
+                PermanentlyExcludedObjectIds.Add(id);
                 return false;
             }
 
@@ -361,6 +379,28 @@ namespace ShrinkCart
             }
 
             return true;
+        }
+
+        private static bool ShouldMarkPotentialClientCartScale(PhysGrabObject item)
+        {
+            if (!PassesFastCandidateChecks(item))
+            {
+                return false;
+            }
+
+            string cleanName = CleanName(item.name);
+            ShrinkCategory category;
+            if (TryResolveCategory(item, cleanName, out category))
+            {
+                return HostConfigSync.ShouldMarkCategoryForVisual(category);
+            }
+
+            if (IsShopPlayerItem(item))
+            {
+                return HostConfigSync.ShouldMarkShopPlayerItemForVisual();
+            }
+
+            return HostConfigSync.ShouldMarkNonValuableItemForVisual();
         }
 
         private static bool ResolveShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)
@@ -395,19 +435,29 @@ namespace ShrinkCart
 
         private static bool IsPermanentlyExcludedCartItem(PhysGrabObject item, string cleanName)
         {
-            if (item.GetComponent<PhysGrabCart>() != null)
+            PhysGrabCart cart = item.GetComponent<PhysGrabCart>();
+            if (cart != null)
             {
                 return true;
             }
 
-            if (item.GetComponent<ItemVehicle>() != null)
+            cart = item.GetComponentInParent<PhysGrabCart>();
+            if (cart != null && IsCartRootPhysObject(cart, item))
+            {
+                return true;
+            }
+
+            if (item.GetComponent<ItemVehicle>() != null || item.GetComponentInParent<ItemVehicle>() != null)
             {
                 return true;
             }
 
             if (item.GetComponent<ItemCartCannon>() != null ||
                 item.GetComponent<ItemCartCannonMain>() != null ||
-                item.GetComponent<ItemCartLaser>() != null)
+                item.GetComponent<ItemCartLaser>() != null ||
+                item.GetComponentInParent<ItemCartCannon>() != null ||
+                item.GetComponentInParent<ItemCartCannonMain>() != null ||
+                item.GetComponentInParent<ItemCartLaser>() != null)
             {
                 return true;
             }
@@ -432,6 +482,16 @@ namespace ShrinkCart
             return itemType == SemiFunc.itemType.cart ||
                    itemType == SemiFunc.itemType.vehicle ||
                    itemType == SemiFunc.itemType.pocket_cart;
+        }
+
+        private static bool IsCartRootPhysObject(PhysGrabCart cart, PhysGrabObject item)
+        {
+            if (cart == null || item == null || PhysGrabCartPhysGrabObjectField == null)
+            {
+                return false;
+            }
+
+            return PhysGrabCartPhysGrabObjectField.GetValue(cart) as PhysGrabObject == item;
         }
 
         private static bool IsShopPlayerItem(PhysGrabObject item)

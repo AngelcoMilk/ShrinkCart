@@ -1,11 +1,11 @@
-# ShrinkCart v0.2.4
+# ShrinkCart v0.2.5
 
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
 作者 / Author: **AngelcoMilk**  
 GitHub: https://github.com/AngelcoMilk/ShrinkCart
 
-ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车一段时间后会恢复原尺寸。缩放底层由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光、商店/人物用品过滤，以及可选敌人进车秒杀。
+ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车一段时间后会恢复原尺寸。缩放底层由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光、商店/人物用品过滤、主机配置同步，以及可选敌人进车秒杀。
 
 ## 依赖
 
@@ -17,9 +17,9 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 
 ## 推荐安装方式
 
-推荐房间里所有玩家都安装 ShrinkCart 和上述依赖。主机负责决定缩放倍率、商店/人物用品是否参与缩放、离车恢复时机和敌人进车秒杀；所有人都安装时，缩放显示、隐藏闪光和配置体验最一致。
+推荐房间里所有玩家都安装 ShrinkCart 和上述依赖。主机负责决定缩放倍率、商店/人物用品是否参与缩放、离车恢复时机和敌人进车秒杀；ScalerCore 负责把实际缩放状态同步给客户端。
 
-如果只有主机安装 ShrinkCart，缩放触发仍以主机为准，但客户端至少需要 ScalerCore 才能可靠看到缩放效果。如果客户端没有安装 ShrinkCart，可能仍会看到 ScalerCore 默认的冲击闪光。
+v0.2.5 增加了主机配置快照同步。客户端本地配置与主机不同也不会改变缩放大小；只要客户端也安装 ShrinkCart，就会按主机设置隐藏购物车缩放时的闪光和冲击声音。只装 ScalerCore、没有安装 ShrinkCart 的客户端仍可能看到 ScalerCore 默认特效。
 
 ## 主要功能
 
@@ -29,9 +29,10 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 - **贵重物分类倍率**：支持 Tiny、Small、Medium、Big、Wide、Tall、VeryTall 单独开关和倍率。
 - **永久排除项**：大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。
 - **R.E.P.O. 4.0 适配**：优先读取游戏新版本内置 `ValuableObject.volumeType` 来判断贵重物大小分类。
-- **主机同步**：多人游戏里以主机配置为准，缩放参数通过 ScalerCore 同步。
+- **主机同步**：多人游戏里以主机配置为准，缩放参数通过 ScalerCore 同步，ShrinkCart 配置快照通过 Photon 房间属性同步。
 - **边缘防抖**：物品在购物车边缘短暂离开时不会立刻放大，减少反复缩放抽搐。
-- **隐藏缩放闪光**：默认隐藏购物车缩小/恢复时的 ScalerCore 冲击闪光，不关闭普通碰撞特效。
+- **隐藏缩放闪光/声音**：默认隐藏购物车缩小/恢复时的 ScalerCore 冲击特效，不关闭普通碰撞特效。
+- **车撞车优化**：不再常驻改写车辆 hurt collider，减少两辆车相撞时的额外开销。
 - **可选危险功能**：可开启敌人进车秒杀，也可开启车辆碾压秒杀玩家。
 
 ## 配置说明
@@ -46,7 +47,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.4 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.5 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
 
 ## 安装（r2modman）
 
@@ -59,19 +60,19 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 
 - 缩放动画由 ScalerCore 控制，ShrinkCart 不重写底层缩放系统。
 - 如果 ScalerCore 因碰撞、安全恢复、对象禁用或同步保护选择瞬间恢复，ShrinkCart 不会强行绕过它。
-- 隐藏闪光只屏蔽 ShrinkCart 购物车缩放流程里的 ScalerCore 冲击特效。
+- 隐藏闪光和声音只屏蔽 ShrinkCart 购物车缩放流程里的 ScalerCore 冲击特效。
 - 如果其他缩放类 mod 已经控制同一个物品，ShrinkCart 会尽量避免覆盖已经处于缩放状态的对象。
 
 ---
 
-# ShrinkCart v0.2.4
+# ShrinkCart v0.2.5
 
 A shrink-hauler cart for R.E.P.O. 4.0.
 
 Author: **AngelcoMilk**  
 GitHub: https://github.com/AngelcoMilk/ShrinkCart
 
-ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart for easier hauling, then restores them after they truly leave the cart. ScalerCore handles the low-level scaling; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale flashes, shop/player item filtering, and optional enemy-in-cart instant kill.
+ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart for easier hauling, then restores them after they truly leave the cart. ScalerCore handles the low-level scaling; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale flashes and impact sounds, shop/player item filtering, host config sync, and optional enemy-in-cart instant kill.
 
 ## Dependencies
 
@@ -81,7 +82,9 @@ ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart 
 
 ## Recommended Multiplayer Setup
 
-All players in the room should install ShrinkCart and its dependencies. The host decides scale factors, shop/player item filtering, restore timing, and enemy-in-cart instant kill; installing it for everyone gives the most consistent visuals and config behavior.
+All players in the room should install ShrinkCart and its dependencies. The host decides scale factors, shop/player item filtering, restore timing, and enemy-in-cart instant kill. ScalerCore syncs the actual scale state, while ShrinkCart syncs a host config snapshot for consistent client-side visuals.
+
+Clients with ShrinkCart installed can hide cart-scale flashes and impact sounds according to the host settings. Clients without ShrinkCart may still see ScalerCore default effects.
 
 ## Features
 
@@ -91,14 +94,15 @@ All players in the room should install ShrinkCart and its dependencies. The host
 - Per-category factors for Tiny, Small, Medium, Big, Wide, Tall, and VeryTall valuables.
 - Small/big carts, C.A.R.T. Cannon, and C.A.R.T. Laser are always excluded.
 - Built for R.E.P.O. 4.0, using `ValuableObject.volumeType` for valuable size categories.
-- Host-authoritative scaling through ScalerCore multiplayer sync.
+- Host-authoritative scaling through ScalerCore multiplayer sync plus ShrinkCart host config snapshots.
 - Cart-edge debounce to prevent rapid shrink/restore jitter.
-- Hidden cart-scale impact flash by default.
+- Hidden cart-scale impact flash and sound by default.
+- Reduced vehicle collision overhead by avoiding persistent hurt collider edits.
 - Optional enemy-in-cart instant kill and optional player vehicle-crush instant kill.
 
 ## Configuration
 
-Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.4 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.5 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
 
 ## Installation (r2modman)
 
@@ -111,5 +115,5 @@ Configuration is provided through REPOConfig. Scale factors are direct size mult
 
 - Scaling animation is controlled by ScalerCore.
 - ShrinkCart does not override ScalerCore safety restores.
-- Hidden flash only applies to ShrinkCart cart scaling effects.
+- Hidden flash and sound only apply to ShrinkCart cart scaling effects.
 - Other scaling mods may still control objects they already scaled.

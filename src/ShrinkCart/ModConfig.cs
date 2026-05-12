@@ -240,7 +240,6 @@ namespace ShrinkCart
             WatchScaling(SurplusScaleFactor);
             WatchScaling(FallbackScaleFactor);
 
-            VehicleCrushInstantKill.SettingChanged += delegate { VehicleCrushController.RefreshAll(); };
         }
 
         internal static float SafeScaleSpeed()

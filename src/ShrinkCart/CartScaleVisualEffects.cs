@@ -73,7 +73,7 @@ namespace ShrinkCart
 
         internal static bool BeginScalerCoreDispatch(ScaleController controller)
         {
-            if (!ModConfig.HideScaleFlash.Value || controller == null)
+            if (!HostConfigSync.EffectiveHideScaleFlash() || controller == null)
             {
                 return false;
             }
@@ -133,7 +133,7 @@ namespace ShrinkCart
 
         internal static bool ShouldSuppressPhysImpactEffect()
         {
-            return ModConfig.HideScaleFlash.Value && _suppressPhysImpactDepth > 0;
+            return HostConfigSync.EffectiveHideScaleFlash() && _suppressPhysImpactDepth > 0;
         }
     }
 }

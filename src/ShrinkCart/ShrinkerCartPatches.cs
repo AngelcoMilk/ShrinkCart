@@ -12,15 +12,6 @@ namespace ShrinkCart
         }
     }
 
-    [HarmonyPatch(typeof(ItemVehicle), "Start")]
-    internal static class ItemVehicleStartPatch
-    {
-        private static void Postfix(ItemVehicle __instance)
-        {
-            VehicleCrushController.Configure(__instance);
-        }
-    }
-
     [HarmonyPatch(typeof(HurtCollider), "PlayerHurt")]
     internal static class HurtColliderPlayerHurtPatch
     {
@@ -77,6 +68,34 @@ namespace ShrinkCart
         }
     }
 
+    [HarmonyPatch(typeof(ScaleController), "RPC_Shrink")]
+    internal static class ScaleControllerRpcShrinkPatch
+    {
+        private static void Prefix(ScaleController __instance, out bool __state)
+        {
+            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
+        }
+
+        private static void Postfix(bool __state)
+        {
+            CartScaleVisualEffects.EndScalerCoreDispatch(__state);
+        }
+    }
+
+    [HarmonyPatch(typeof(ScaleController), "RPC_Expand")]
+    internal static class ScaleControllerRpcExpandPatch
+    {
+        private static void Prefix(ScaleController __instance, out bool __state)
+        {
+            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
+        }
+
+        private static void Postfix(ScaleController __instance, bool __state)
+        {
+            CartScaleVisualEffects.EndScalerCoreExpandDispatch(__state, __instance);
+        }
+    }
+
     [HarmonyPatch(typeof(AssetManager), "PhysImpactEffect")]
     internal static class AssetManagerPhysImpactEffectPatch
     {
@@ -95,6 +114,7 @@ namespace ShrinkCart
             CartScaleVisualEffects.Reset();
             VehicleCrushController.RestoreAll();
             EnemyInCartKillController.Reset();
+            HostConfigSync.Reset();
         }
     }
 }

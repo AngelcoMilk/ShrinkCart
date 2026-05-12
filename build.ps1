@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.4"
+$modVersion = "0.2.5"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -118,7 +118,6 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabInCart"; Method = "Add"; Parameters = @("PhysGrabObject") },
         @{ Type = "PhysGrabObjectImpactDetector"; Method = "OnTriggerStay"; Parameters = @("UnityEngine.Collider") },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
-        @{ Type = "ItemVehicle"; Method = "Start"; Parameters = @() },
         @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
         @{ Type = "AssetManager"; Method = "PhysImpactEffect"; Parameters = @("UnityEngine.Vector3") },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
@@ -126,9 +125,6 @@ function Test-GameHookTargets {
     )
     $requiredFields = @(
         @{ Type = "PhysGrabInCart"; Field = "cart" },
-        @{ Type = "ItemVehicle"; Field = "hurtColliderSmall" },
-        @{ Type = "ItemVehicle"; Field = "hurtColliderMedium" },
-        @{ Type = "ItemVehicle"; Field = "hurtColliderBig" },
         @{ Type = "HurtCollider"; Field = "playerKill" },
         @{ Type = "HurtCollider"; Field = "playerLogic" },
         @{ Type = "EnemyRigidbody"; Field = "enemy" },
@@ -203,7 +199,9 @@ function Test-ScalerCoreHookTargets {
     $targets = @(
         @{ Type = "ScalerCore.ScaleController"; Method = "DispatchShrink"; Parameters = @("ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpand"; Parameters = @() },
-        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpandNow"; Parameters = @() }
+        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpandNow"; Parameters = @() },
+        @{ Type = "ScalerCore.ScaleController"; Method = "RPC_Shrink"; Parameters = @("UnityEngine.Vector3", "System.Single[]", "System.Boolean[]") },
+        @{ Type = "ScalerCore.ScaleController"; Method = "RPC_Expand"; Parameters = @() }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
