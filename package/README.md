@@ -35,6 +35,32 @@ v0.2.5 增加了主机配置快照同步。客户端本地配置与主机不同�
 - **车撞车优化**：不再常驻改写车辆 hurt collider，减少两辆车相撞时的额外开销。
 - **可选危险功能**：可开启敌人进车秒杀，也可开启车辆碾压秒杀玩家。
 
+## 动图演示
+
+### 商店/人物用品默认不缩小
+
+枪械、血包等商店购买类实用品默认不会被购物车缩小，避免影响战斗、治疗和工具使用。需要时可以在配置里打开“商店/人物用品也缩小”。
+
+![枪械和血包默认不缩小](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-shop-items-not-scaled.gif)
+
+### 敌人球和 Surplus 会缩小
+
+敌人球和 SurplusValuable 属于特殊物品分类，会使用单独的缩小倍率，方便和普通贵重物分开调整。
+
+![敌人球和 Surplus 缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-enemy-orb-surplus-scaled.gif)
+
+### 大型贵重物会缩小
+
+大型、宽型、高型、超高型贵重物会按各自分类倍率缩小，适合搬运原本难以放进车里的物品。
+
+![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
+
+### R.E.P.O. 4.0 特殊物品支持
+
+R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会优先使用游戏内置分类和自己的特殊物品规则。
+
+![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
+
 ## 配置说明
 
 配置界面由 REPOConfig 提供，主要配置项为中文：
@@ -99,6 +125,32 @@ Clients with ShrinkCart installed can hide cart-scale flashes and impact sounds 
 - Hidden cart-scale impact flash and sound by default.
 - Reduced vehicle collision overhead by avoiding persistent hurt collider edits.
 - Optional enemy-in-cart instant kill and optional player vehicle-crush instant kill.
+
+## GIF Demos
+
+### Shop and player utility items are excluded by default
+
+Guns, health packs, and similar shop utility items are not shrunk by default, so combat, healing, and tool use stay predictable. Enable "Shrink shop/player items" in config if you want them to use the fallback scale factor.
+
+![Guns and health packs are not shrunk by default](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-shop-items-not-scaled.gif)
+
+### Enemy orbs and Surplus shrink
+
+Enemy orbs and SurplusValuable use special categories and can be tuned separately from normal valuables.
+
+![Enemy orb and Surplus shrink demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-enemy-orb-surplus-scaled.gif)
+
+### Large valuables shrink
+
+Big, wide, tall, and very tall valuables shrink by category factor, making bulky items easier to haul in the cart.
+
+![Large item shrink demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
+
+### R.E.P.O. 4.0 special item support
+
+Special items from newer R.E.P.O. versions are also supported through the game's built-in classification plus ShrinkCart's special-item rules.
+
+![R.E.P.O. 4.0 special item shrink demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
 ## Configuration
 
