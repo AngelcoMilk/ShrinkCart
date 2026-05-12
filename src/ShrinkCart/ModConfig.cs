@@ -30,6 +30,7 @@ namespace ShrinkCart
         internal static ConfigEntry<float> ReshrinkCooldownSeconds;
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkNonValuableItems;
+        internal static ConfigEntry<bool> ShrinkShopPlayerItems;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -106,7 +107,13 @@ namespace ShrinkCart
                 "购物车",
                 "普通物品也缩小",
                 true,
-                "启用后，非贵重物品也会使用“普通或未知物品倍率”。");
+                "启用后，非贵重、非商店用品的普通物品也会使用“普通或未知物品倍率”。");
+
+            ShrinkShopPlayerItems = config.Bind(
+                "购物车",
+                "商店/人物用品也缩小",
+                false,
+                "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品也会使用默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -181,7 +188,7 @@ namespace ShrinkCart
                 "普通或未知物品",
                 "默认缩小倍率",
                 0.4f,
-                Ranged("普通物品或无法识别分类的物品放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
+                Ranged("普通物品、未知分类物品，或开启商店用品缩放后的实用品放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             VehicleCrushInstantKill = config.Bind(
                 "车辆碾压",
@@ -208,6 +215,7 @@ namespace ShrinkCart
             WatchScaling(ReshrinkCooldownSeconds);
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkNonValuableItems);
+            WatchScaling(ShrinkShopPlayerItems);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);

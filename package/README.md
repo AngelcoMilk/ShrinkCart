@@ -4,11 +4,13 @@
 
 ## 中文说明
 
-ShrinkCart 是一个 R.E.P.O. 的购物车缩小物品 mod。把物品放进 C.A.R.T / 购物车后会自动缩小，真正离开购物车一段时间后恢复原尺寸。缩放本身由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光和可选的敌人进车秒杀。
+ShrinkCart 是一个 R.E.P.O. 的购物车缩小物品 mod。把贵重物、敌人球、Surplus 或允许的普通物品放进 C.A.R.T / 购物车后会自动缩小，真正离开购物车一段时间后恢复原尺寸。缩放本身由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光和可选的敌人进车秒杀。
 
 ## 功能
 
 - 放入购物车后自动缩小支持的物品。
+- 默认不缩小商店/人物用品，例如枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器和地雷。
+- 大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。
 - 物品在购物车边缘短暂离开时不会立刻放大，减少反复缩放抽搐。
 - 拿出购物车后自动恢复原尺寸，并提供独立的“取出后放大速度”配置。
 - 默认隐藏购物车缩小/恢复时的 ScalerCore 冲击闪光，不关闭普通碰撞特效。
@@ -31,7 +33,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 
 配置界面由 REPOConfig 提供，主要配置项为中文：
 
-- 购物车：启用购物车缩小、放入时缩小速度、取出后放大速度、离车防抖延迟、恢复后重新缩小冷却、保持原始重量、普通物品也缩小、防止碰撞弹回原尺寸。
+- 购物车：启用购物车缩小、放入时缩小速度、取出后放大速度、离车防抖延迟、恢复后重新缩小冷却、保持原始重量、普通物品也缩小、商店/人物用品也缩小、防止碰撞弹回原尺寸。
 - 视觉：隐藏缩放闪光。
 - Tiny/Small/Medium/Big/Wide/Tall/VeryTall 分类：启用此分类缩小、缩小倍率。
 - 敌人球：启用敌人球缩小、Small/Medium/Big/Berserker 敌人球倍率。
@@ -39,7 +41,13 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.2 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.3 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
+
+## 商店/人物用品
+
+ShrinkCart 会识别 `ItemAttributes`、`ItemEquippable` 和 `PhysGrabObject.isGun`，把商店区可购买的实用品归为商店/人物用品。默认情况下这些物品不会进入 fallback 缩小，避免枪支、血包等使用物品被车内缩放影响。
+
+如果你打开“商店/人物用品也缩小”，这些物品会使用“普通或未知物品”的默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 是永久排除项，不管开关如何都不会缩小。
 
 ## 多人同步
 
@@ -53,12 +61,16 @@ ShrinkCart 会在物品离开购物车超过“离车防抖延迟”后调用 Sc
 
 ## 性能说明
 
-v0.2.2 继续保持低开销：
+v0.2.3 继续保持低开销：
 
 - 购物车内物品恢复检测为定时检查，不每帧扫描全部物品。
 - 分类和倍率会缓存，配置变化后才重新计算。
 - 车辆 hurt collider 只在车辆生成或配置变化时更新。
-- 离车防抖、恢复后冷却和隐藏闪光都只针对 ShrinkCart 处理过的购物车物品。
+- 离车防抖、恢复后冷却、商店用品过滤和隐藏闪光都只针对 ShrinkCart 处理过的购物车物品。
+
+## Logo
+
+模组包使用 `package/icon.png` 作为 Thunderstore/r2modman logo。
 
 ## 已知限制
 
@@ -72,11 +84,13 @@ v0.2.2 继续保持低开销：
 
 ## English
 
-ShrinkCart is a R.E.P.O. cart item shrinking mod by **AngelcoMilk**. Items placed inside a C.A.R.T / cart shrink automatically and restore after they have truly left the cart for a short delay. ScalerCore owns the low-level scale behavior; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale impact flashes, and optional enemy-in-cart instant kill.
+ShrinkCart is a R.E.P.O. cart item shrinking mod by **AngelcoMilk**. Valuables, enemy orbs, Surplus items, and allowed normal objects shrink automatically when placed inside a C.A.R.T / cart, then restore after they have truly left the cart for a short delay. ScalerCore owns the low-level scale behavior; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale impact flashes, and optional enemy-in-cart instant kill.
 
 ## Features
 
 - Automatically shrinks supported items while they are inside a cart.
+- Does not shrink shop/player utility items by default, such as guns, health packs, melee items, grenades, tools, drones, orbs, upgrades, trackers, and mines.
+- Small/big carts, C.A.R.T. Cannon, and C.A.R.T. Laser are always excluded.
 - Adds cart-edge debounce so items do not rapidly shrink/restore when they jitter near the cart boundary.
 - Restores items after removal with a separate restore speed setting.
 - Hides the ScalerCore impact flash for ShrinkCart cart scaling by default, without disabling normal collision effects.
@@ -89,13 +103,15 @@ ShrinkCart is a R.E.P.O. cart item shrinking mod by **AngelcoMilk**. Items place
 
 ## Multiplayer
 
-Scaling is host-authoritative. In multiplayer, only the host/singleplayer side triggers cart shrinking and computes scale factors, debounce timing, and restore timing. ScalerCore then synchronizes scale parameters to clients.
+Scaling is host-authoritative. In multiplayer, only the host/singleplayer side triggers cart shrinking and computes scale factors, debounce timing, restore timing, and shop-item filtering. ScalerCore then synchronizes scale parameters to clients.
 
 All players should install ShrinkCart, ScalerCore, and REPOConfig for the most consistent result. At minimum, clients need ScalerCore to reliably see scale changes. Clients without ShrinkCart may still see ScalerCore's default impact flash during cart scaling.
 
 ## Configuration
 
-The in-game configuration is provided by REPOConfig. Scale factor values are direct size multipliers: `0.4` means 40% of the original size. v0.2.2 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`.
+The in-game configuration is provided by REPOConfig. Scale factor values are direct size multipliers: `0.4` means 40% of the original size. v0.2.3 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item shrinking `false`.
+
+Shop/player utility items are detected from `ItemAttributes`, `ItemEquippable`, and `PhysGrabObject.isGun`. If “Shrink Shop/Player Items” is enabled, those items use the fallback scale factor. Carts, C.A.R.T. Cannon, and C.A.R.T. Laser remain excluded regardless of the setting.
 
 ## Smooth Restore
 

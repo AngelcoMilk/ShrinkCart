@@ -42,6 +42,12 @@ namespace ShrinkCart
         private static readonly FieldInfo ScaleOptionsField =
             typeof(ScaleController).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        private static readonly FieldInfo ItemAttributesItemTypeField =
+            typeof(ItemAttributes).GetField("itemType", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        private static readonly FieldInfo PhysGrabObjectIsGunField =
+            typeof(PhysGrabObject).GetField("isGun", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
         private static float _nextTickTime;
 
         internal static void Reset()
@@ -336,12 +342,9 @@ namespace ShrinkCart
                 return false;
             }
 
-            if (item.GetComponent<PhysGrabCart>() != null)
-            {
-                return false;
-            }
+            string cleanName = CleanName(item.name);
 
-            if (item.GetComponent<ItemVehicle>() != null)
+            if (IsPermanentlyExcludedCartItem(item, cleanName))
             {
                 return false;
             }
@@ -357,8 +360,7 @@ namespace ShrinkCart
                 return false;
             }
 
-            string cleanName = CleanName(item.name);
-            return cleanName != "Item Cart Cannon" && cleanName != "Item Cart Laser";
+            return true;
         }
 
         private static bool ResolveShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)
@@ -369,6 +371,17 @@ namespace ShrinkCart
             string cleanName = CleanName(item.name);
             if (!TryResolveCategory(item, cleanName, out category))
             {
+                if (IsShopPlayerItem(item))
+                {
+                    if (!ModConfig.ShrinkShopPlayerItems.Value)
+                    {
+                        return false;
+                    }
+
+                    category = ShrinkCategory.Fallback;
+                    return ModConfig.TryGetScaleFactor(category, out factor);
+                }
+
                 if (!ModConfig.ShrinkNonValuableItems.Value)
                 {
                     return false;
@@ -378,6 +391,98 @@ namespace ShrinkCart
             }
 
             return ModConfig.TryGetScaleFactor(category, out factor);
+        }
+
+        private static bool IsPermanentlyExcludedCartItem(PhysGrabObject item, string cleanName)
+        {
+            if (item.GetComponent<PhysGrabCart>() != null)
+            {
+                return true;
+            }
+
+            if (item.GetComponent<ItemVehicle>() != null)
+            {
+                return true;
+            }
+
+            if (item.GetComponent<ItemCartCannon>() != null ||
+                item.GetComponent<ItemCartCannonMain>() != null ||
+                item.GetComponent<ItemCartLaser>() != null)
+            {
+                return true;
+            }
+
+            if (cleanName == "Item Cart Cannon" || cleanName == "Item Cart Laser")
+            {
+                return true;
+            }
+
+            ItemAttributes attributes = item.GetComponent<ItemAttributes>();
+            if (attributes == null)
+            {
+                return false;
+            }
+
+            SemiFunc.itemType itemType;
+            if (!TryGetItemType(attributes, out itemType))
+            {
+                return false;
+            }
+
+            return itemType == SemiFunc.itemType.cart ||
+                   itemType == SemiFunc.itemType.vehicle ||
+                   itemType == SemiFunc.itemType.pocket_cart;
+        }
+
+        private static bool IsShopPlayerItem(PhysGrabObject item)
+        {
+            ItemAttributes attributes = item.GetComponent<ItemAttributes>();
+            if (attributes != null)
+            {
+                return true;
+            }
+
+            ItemEquippable equippable = item.GetComponent<ItemEquippable>();
+            if (equippable != null)
+            {
+                return true;
+            }
+
+            if (TryGetIsGun(item))
+            {
+                return true;
+            }
+
+            return item.GetComponent<ItemBattery>() != null;
+        }
+
+        private static bool TryGetItemType(ItemAttributes attributes, out SemiFunc.itemType itemType)
+        {
+            itemType = default(SemiFunc.itemType);
+            if (attributes == null || ItemAttributesItemTypeField == null)
+            {
+                return false;
+            }
+
+            object value = ItemAttributesItemTypeField.GetValue(attributes);
+            if (!(value is SemiFunc.itemType))
+            {
+                return false;
+            }
+
+            itemType = (SemiFunc.itemType)value;
+            return true;
+        }
+
+        private static bool TryGetIsGun(PhysGrabObject item)
+        {
+            if (item == null || PhysGrabObjectIsGunField == null)
+            {
+                return false;
+            }
+
+            object value = PhysGrabObjectIsGunField.GetValue(item);
+            return value is bool && (bool)value;
         }
 
         private static bool TryResolveCategory(PhysGrabObject item, string cleanName, out ShrinkCategory category)

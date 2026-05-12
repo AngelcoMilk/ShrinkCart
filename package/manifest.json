@@ -1,8 +1,8 @@
 {
   "name": "ShrinkCart",
-  "version_number": "0.2.2",
+  "version_number": "0.2.3",
   "website_url": "https://github.com/AngelcoMilk/ShrinkCart",
-  "description": "Automatically shrinks cart items with host-authoritative category scaling, edge debounce, hidden cart-scale flash, Chinese REPOConfig options, and optional enemy-in-cart instant kill.",
+  "description": "Automatically shrinks cart valuables with host-authoritative scaling, edge debounce, hidden cart-scale flash, Chinese REPOConfig options, and default exclusion for shop/player items.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305",
     "Vippy-ScalerCore-0.5.2",
