@@ -1,11 +1,10 @@
 {
-  "name": "ShrinkCart",
-  "version_number": "0.2.3",
-  "website_url": "https://github.com/AngelcoMilk/ShrinkCart",
-  "description": "Automatically shrinks cart valuables with host-authoritative scaling, edge debounce, hidden cart-scale flash, Chinese REPOConfig options, and default exclusion for shop/player items.",
+  "name": "RepoCoyoteStim",
+  "version_number": "0.5.8",
+  "website_url": "https://github.com/AngelcoMilk/RepoCoyoteStim",
+  "description": "Connect DG-LAB Coyote 3.0 in R.E.P.O.; supports hit/death punishment, continuous waveforms, footstep/action triggers, and App Socket control panel.",
   "dependencies": [
-    "BepInEx-BepInExPack-5.4.2305",
-    "Vippy-ScalerCore-0.5.2",
-    "nickklmao-REPOConfig-1.2.6"
-  ]
+    "BepInEx-BepInExPack-5.4.2305"
+  ],
+  "author": "AngelcoMilk"
 }
