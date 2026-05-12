@@ -6,11 +6,12 @@ namespace ShrinkCart
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     [BepInDependency("Vippy.ScalerCore", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("nickklmao.repoconfig", BepInDependency.DependencyFlags.HardDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
         public const string PluginGuid = "AngelcoMilk.ShrinkCart";
         public const string PluginName = "ShrinkCart";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;

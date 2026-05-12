@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ScalerCore;
 using UnityEngine;
 
@@ -11,10 +12,14 @@ namespace ShrinkCart
         {
             internal GameObject Target;
             internal float LastSeenTime;
+            internal ShrinkCategory Category;
         }
 
         private static readonly Dictionary<int, TrackedObject> TrackedObjects =
             new Dictionary<int, TrackedObject>();
+
+        private static readonly FieldInfo ScaleOptionsField =
+            typeof(ScaleController).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic);
 
         internal static void Reset()
         {
@@ -38,9 +43,11 @@ namespace ShrinkCart
                 return;
             }
 
-            if (IsShrinkCandidate(item))
+            ShrinkCategory category;
+            float factor;
+            if (IsShrinkCandidate(item, out category, out factor))
             {
-                TrackOrShrink(item.gameObject);
+                TrackOrShrink(item, category, factor);
             }
         }
 
@@ -123,8 +130,9 @@ namespace ShrinkCart
             }
         }
 
-        private static void TrackOrShrink(GameObject target)
+        private static void TrackOrShrink(PhysGrabObject item, ShrinkCategory category, float factor)
         {
+            GameObject target = item == null ? null : item.gameObject;
             if (target == null)
             {
                 return;
@@ -135,6 +143,7 @@ namespace ShrinkCart
             if (TrackedObjects.TryGetValue(id, out tracked))
             {
                 tracked.LastSeenTime = Time.time;
+                tracked.Category = category;
                 return;
             }
 
@@ -144,7 +153,7 @@ namespace ShrinkCart
             }
 
             ScaleOptions options = ScaleOptions.Default;
-            options.Factor = ModConfig.SafeScaleFactor();
+            options.Factor = factor;
             options.Speed = ModConfig.SafeScaleSpeed();
             options.Duration = 0.0f;
             options.AllowedTargets = ScaleTargets.Valuables | ScaleTargets.Items;
@@ -167,10 +176,11 @@ namespace ShrinkCart
             TrackedObjects[id] = new TrackedObject
             {
                 Target = target,
-                LastSeenTime = Time.time
+                LastSeenTime = Time.time,
+                Category = category
             };
 
-            DebugLog("Shrunk " + target.name);
+            DebugLog("Shrunk " + target.name + " as " + category + " factor=" + factor.ToString("0.###"));
         }
 
         private static void RestoreTrackedObject(GameObject target)
@@ -182,11 +192,14 @@ namespace ShrinkCart
 
             try
             {
-                if (ScaleManager.IsScaled(target))
+                if (!ScaleManager.IsScaled(target))
                 {
-                    ScaleManager.Restore(target);
-                    DebugLog("Restored " + target.name);
+                    return;
                 }
+
+                ApplyRestoreSpeed(target);
+                ScaleManager.Restore(target);
+                DebugLog("Restored " + target.name + " speed=" + ModConfig.SafeRestoreScaleSpeed().ToString("0.###"));
             }
             catch (Exception ex)
             {
@@ -194,8 +207,35 @@ namespace ShrinkCart
             }
         }
 
-        private static bool IsShrinkCandidate(PhysGrabObject item)
+        private static void ApplyRestoreSpeed(GameObject target)
         {
+            if (ScaleOptionsField == null)
+            {
+                return;
+            }
+
+            ScaleController controller = ScaleManager.GetController(target);
+            if (controller == null)
+            {
+                return;
+            }
+
+            object boxedOptions = ScaleOptionsField.GetValue(controller);
+            if (!(boxedOptions is ScaleOptions))
+            {
+                return;
+            }
+
+            ScaleOptions options = (ScaleOptions)boxedOptions;
+            options.Speed = ModConfig.SafeRestoreScaleSpeed();
+            ScaleOptionsField.SetValue(controller, options);
+        }
+
+        private static bool IsShrinkCandidate(PhysGrabObject item, out ShrinkCategory category, out float factor)
+        {
+            category = ShrinkCategory.Fallback;
+            factor = 1.0f;
+
             if (item == null || item.gameObject == null)
             {
                 return false;
@@ -227,18 +267,118 @@ namespace ShrinkCart
                 return false;
             }
 
-            if (!ModConfig.ShrinkNonValuableItems.Value && item.GetComponent<ValuableObject>() == null)
-            {
-                return false;
-            }
-
             string cleanName = CleanName(item.name);
             if (cleanName == "Item Cart Cannon" || cleanName == "Item Cart Laser")
             {
                 return false;
             }
 
+            if (!TryResolveCategory(item, cleanName, out category))
+            {
+                if (!ModConfig.ShrinkNonValuableItems.Value)
+                {
+                    return false;
+                }
+
+                category = ShrinkCategory.Fallback;
+            }
+
+            return ModConfig.TryGetScaleFactor(category, out factor);
+        }
+
+        private static bool TryResolveCategory(PhysGrabObject item, string cleanName, out ShrinkCategory category)
+        {
+            category = ShrinkCategory.Fallback;
+
+            if (item.GetComponent<SurplusValuable>() != null)
+            {
+                category = ShrinkCategory.Surplus;
+                return true;
+            }
+
+            if (TryResolveEnemyOrb(cleanName, out category))
+            {
+                return true;
+            }
+
+            ValuableObject valuable = item.GetComponent<ValuableObject>();
+            if (valuable == null)
+            {
+                return false;
+            }
+
+            category = FromVolumeType(valuable.volumeType);
             return true;
+        }
+
+        private static ShrinkCategory FromVolumeType(ValuableVolume.Type volumeType)
+        {
+            switch (volumeType)
+            {
+                case ValuableVolume.Type.Tiny:
+                    return ShrinkCategory.Tiny;
+                case ValuableVolume.Type.Small:
+                    return ShrinkCategory.Small;
+                case ValuableVolume.Type.Medium:
+                    return ShrinkCategory.Medium;
+                case ValuableVolume.Type.Big:
+                    return ShrinkCategory.Big;
+                case ValuableVolume.Type.Wide:
+                    return ShrinkCategory.Wide;
+                case ValuableVolume.Type.Tall:
+                    return ShrinkCategory.Tall;
+                case ValuableVolume.Type.VeryTall:
+                    return ShrinkCategory.VeryTall;
+                default:
+                    return ShrinkCategory.Fallback;
+            }
+        }
+
+        private static bool TryResolveEnemyOrb(string cleanName, out ShrinkCategory category)
+        {
+            category = ShrinkCategory.Fallback;
+            if (string.IsNullOrEmpty(cleanName))
+            {
+                return false;
+            }
+
+            if (!cleanName.StartsWith("Enemy", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string[] parts = cleanName.Split('-');
+            if (parts.Length < 2)
+            {
+                return false;
+            }
+
+            string size = parts[1].Trim();
+            if (size.Equals("Small", StringComparison.OrdinalIgnoreCase))
+            {
+                category = ShrinkCategory.EnemyOrbSmall;
+                return true;
+            }
+
+            if (size.Equals("Medium", StringComparison.OrdinalIgnoreCase))
+            {
+                category = ShrinkCategory.EnemyOrbMedium;
+                return true;
+            }
+
+            if (size.Equals("Big", StringComparison.OrdinalIgnoreCase))
+            {
+                category = ShrinkCategory.EnemyOrbBig;
+                return true;
+            }
+
+            if (size.Equals("Berserker", StringComparison.OrdinalIgnoreCase))
+            {
+                category = ShrinkCategory.EnemyOrbBerserker;
+                return true;
+            }
+
+            return false;
         }
 
         private static string CleanName(string name)

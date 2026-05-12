@@ -3,6 +3,7 @@ param(
     [string]$GameDir = "D:\SteamLibrary\steamapps\common\REPO",
     [string]$R2Profile = "$env:APPDATA\r2modmanPlus-local\REPO\profiles\REPO",
     [string]$ScalerCoreDll = "",
+    [string]$REPOConfigDll = "",
     [switch]$InstallToProfile,
     [switch]$PackageToDesktop
 )
@@ -10,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.1.0"
+$modVersion = "0.2.0"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -43,6 +44,20 @@ if ([string]::IsNullOrWhiteSpace($ScalerCoreDll)) {
 
 if (!(Test-Path $ScalerCoreDll)) {
     throw "ScalerCore.dll not found. Install Vippy-ScalerCore in the REPO r2modman profile, or pass -ScalerCoreDll <path>."
+}
+
+if ([string]::IsNullOrWhiteSpace($REPOConfigDll)) {
+    $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "REPOConfig.dll" -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1
+
+    if ($candidate -ne $null) {
+        $REPOConfigDll = $candidate.FullName
+    }
+}
+
+if (!(Test-Path $REPOConfigDll)) {
+    throw "REPOConfig.dll not found. Install nickklmao-REPOConfig in the REPO r2modman profile, or pass -REPOConfigDll <path>."
 }
 
 if (Test-Path $distRoot) {
@@ -80,7 +95,8 @@ $refs = @(
     (Join-Path $managed "PhotonRealtime.dll"),
     (Join-Path $managed "Photon3Unity3D.dll"),
     (Join-Path $managed "netstandard.dll"),
-    $ScalerCoreDll
+    $ScalerCoreDll,
+    $REPOConfigDll
 )
 
 $refArgs = $refs | ForEach-Object { "/reference:$_" }
@@ -114,6 +130,7 @@ function Test-GameHookTargets {
         @{ Type = "ItemVehicle"; Field = "hurtColliderMedium" },
         @{ Type = "ItemVehicle"; Field = "hurtColliderBig" },
         @{ Type = "HurtCollider"; Field = "playerKill" },
+        @{ Type = "HurtCollider"; Field = "playerLogic" },
         @{ Type = "HurtCollider"; Field = "enemyKill" }
     )
 
@@ -219,3 +236,4 @@ if ($PackageToDesktop) {
 
 Write-Host "Built $pluginOut"
 Write-Host "Using ScalerCore: $ScalerCoreDll"
+Write-Host "Using REPOConfig: $REPOConfigDll"

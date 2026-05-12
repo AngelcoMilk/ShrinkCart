@@ -29,6 +29,34 @@ namespace ShrinkCart
         }
     }
 
+    [HarmonyPatch(typeof(HurtCollider), "PlayerHurt")]
+    internal static class HurtColliderPlayerHurtPatch
+    {
+        private static void Prefix(HurtCollider __instance, out VehicleCrushController.TemporaryHurtState __state)
+        {
+            __state = VehicleCrushController.BeforePlayerHurt(__instance);
+        }
+
+        private static void Postfix(HurtCollider __instance, VehicleCrushController.TemporaryHurtState __state)
+        {
+            VehicleCrushController.AfterHurt(__instance, __state);
+        }
+    }
+
+    [HarmonyPatch(typeof(HurtCollider), "EnemyHurt")]
+    internal static class HurtColliderEnemyHurtPatch
+    {
+        private static void Prefix(HurtCollider __instance, out VehicleCrushController.TemporaryHurtState __state)
+        {
+            __state = VehicleCrushController.BeforeEnemyHurt(__instance);
+        }
+
+        private static void Postfix(HurtCollider __instance, VehicleCrushController.TemporaryHurtState __state)
+        {
+            VehicleCrushController.AfterHurt(__instance, __state);
+        }
+    }
+
     [HarmonyPatch(typeof(RunManager), "ChangeLevel")]
     internal static class RunManagerChangeLevelPatch
     {
