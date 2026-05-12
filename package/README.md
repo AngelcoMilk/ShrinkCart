@@ -3,9 +3,8 @@
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
 作者 / Author: **AngelcoMilk**  
-发布命名空间 / Thunderstore namespace: **AngelcoMilk**  
-GitHub: https://github.com/AngelcoMilk/ShrinkCart  
-Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/
+Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
+GitHub 文档 / GitHub Docs: https://github.com/AngelcoMilk/ShrinkCart
 
 ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车一段时间后会恢复原尺寸。缩放底层由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光、商店/人物用品过滤、主机配置同步，以及可选敌人进车秒杀。
 
@@ -75,7 +74,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.8 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.8 默认值已按本地测试配置调整：缩小速度 `0.6`，放大速度 `0.2`，离车防抖延迟 `0.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
 
 ## 安装（r2modman）
 
@@ -98,9 +97,8 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 A shrink-hauler cart for R.E.P.O. 4.0.
 
 Author: **AngelcoMilk**  
-Thunderstore namespace: **AngelcoMilk**  
-GitHub: https://github.com/AngelcoMilk/ShrinkCart  
-Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/
+Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
+GitHub Docs: https://github.com/AngelcoMilk/ShrinkCart
 
 ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart for easier hauling, then restores them after they truly leave the cart. ScalerCore handles the low-level scaling; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale flashes and impact sounds, shop/player item filtering, host config sync, and optional enemy-in-cart instant kill.
 
@@ -158,7 +156,7 @@ Special items from newer R.E.P.O. versions are also supported through the game's
 
 ## Configuration
 
-Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.8 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.8 defaults now match the local test config: shrink speed `0.6`, restore speed `0.2`, cart leave debounce `0.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
 
 ## Installation (r2modman)
 
