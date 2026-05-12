@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.0"
+$modVersion = "0.2.1"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -119,9 +119,8 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabObjectImpactDetector"; Method = "OnTriggerStay"; Parameters = @("UnityEngine.Collider") },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
         @{ Type = "ItemVehicle"; Method = "Start"; Parameters = @() },
-        @{ Type = "ItemVehicle"; Method = "Update"; Parameters = @() },
         @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
-        @{ Type = "HurtCollider"; Method = "EnemyHurt"; Parameters = @("Enemy") },
+        @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
     $requiredFields = @(
@@ -131,7 +130,9 @@ function Test-GameHookTargets {
         @{ Type = "ItemVehicle"; Field = "hurtColliderBig" },
         @{ Type = "HurtCollider"; Field = "playerKill" },
         @{ Type = "HurtCollider"; Field = "playerLogic" },
-        @{ Type = "HurtCollider"; Field = "enemyKill" }
+        @{ Type = "EnemyRigidbody"; Field = "enemy" },
+        @{ Type = "Enemy"; Field = "Health" },
+        @{ Type = "EnemyHealth"; Field = "healthCurrent" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]

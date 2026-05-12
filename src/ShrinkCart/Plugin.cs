@@ -11,7 +11,7 @@ namespace ShrinkCart
     {
         public const string PluginGuid = "AngelcoMilk.ShrinkCart";
         public const string PluginName = "ShrinkCart";
-        public const string PluginVersion = "0.2.0";
+        public const string PluginVersion = "0.2.1";
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
@@ -25,6 +25,7 @@ namespace ShrinkCart
 
             ModConfig.Bind(Config);
             ShrinkerCartController.Reset();
+            EnemyInCartKillController.Reset();
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll();

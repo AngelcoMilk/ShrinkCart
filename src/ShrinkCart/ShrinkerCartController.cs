@@ -8,6 +8,8 @@ namespace ShrinkCart
 {
     internal static class ShrinkerCartController
     {
+        private const float TickIntervalSeconds = 0.1f;
+
         private sealed class TrackedObject
         {
             internal GameObject Target;
@@ -15,15 +17,41 @@ namespace ShrinkCart
             internal ShrinkCategory Category;
         }
 
+        private sealed class CachedShrinkData
+        {
+            internal int ConfigVersion;
+            internal bool CanShrink;
+            internal ShrinkCategory Category;
+            internal float Factor;
+        }
+
         private static readonly Dictionary<int, TrackedObject> TrackedObjects =
             new Dictionary<int, TrackedObject>();
+
+        private static readonly Dictionary<int, CachedShrinkData> ShrinkDataCache =
+            new Dictionary<int, CachedShrinkData>();
+
+        private static readonly Dictionary<int, float> ReshrinkCooldownUntil =
+            new Dictionary<int, float>();
+
+        private static readonly List<int> RestoreIds = new List<int>(16);
+        private static readonly List<int> ExpiredCooldownIds = new List<int>(16);
+        private static readonly List<GameObject> RestoreTargets = new List<GameObject>(16);
 
         private static readonly FieldInfo ScaleOptionsField =
             typeof(ScaleController).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        private static float _nextTickTime;
+
         internal static void Reset()
         {
             TrackedObjects.Clear();
+            ShrinkDataCache.Clear();
+            ReshrinkCooldownUntil.Clear();
+            RestoreIds.Clear();
+            ExpiredCooldownIds.Clear();
+            RestoreTargets.Clear();
+            _nextTickTime = 0.0f;
         }
 
         internal static void ProcessCartObject(PhysGrabInCart inCart, PhysGrabObject item)
@@ -33,19 +61,24 @@ namespace ShrinkCart
                 return;
             }
 
-            if (!ModConfig.CartShrinkingEnabled.Value)
+            if (inCart == null || inCart.cart == null || item == null)
             {
                 return;
             }
 
-            if (inCart == null || inCart.cart == null || item == null)
+            if (EnemyInCartKillController.TryKill(item))
+            {
+                return;
+            }
+
+            if (!ModConfig.CartShrinkingEnabled.Value)
             {
                 return;
             }
 
             ShrinkCategory category;
             float factor;
-            if (IsShrinkCandidate(item, out category, out factor))
+            if (TryGetShrinkData(item, out category, out factor))
             {
                 TrackOrShrink(item, category, factor);
             }
@@ -58,6 +91,15 @@ namespace ShrinkCart
                 return;
             }
 
+            float now = Time.time;
+            if (now < _nextTickTime)
+            {
+                return;
+            }
+
+            _nextTickTime = now + TickIntervalSeconds;
+            ClearExpiredCooldowns(now);
+
             if (!ModConfig.CartShrinkingEnabled.Value)
             {
                 RestoreAll();
@@ -69,39 +111,28 @@ namespace ShrinkCart
                 return;
             }
 
-            float now = Time.time;
             float grace = ModConfig.SafeRestoreGraceSeconds();
-            List<int> restoreIds = null;
+            RestoreIds.Clear();
 
             foreach (KeyValuePair<int, TrackedObject> pair in TrackedObjects)
             {
                 TrackedObject tracked = pair.Value;
                 if (tracked.Target == null || now - tracked.LastSeenTime > grace)
                 {
-                    if (restoreIds == null)
-                    {
-                        restoreIds = new List<int>();
-                    }
-
-                    restoreIds.Add(pair.Key);
+                    RestoreIds.Add(pair.Key);
                 }
             }
 
-            if (restoreIds == null)
+            for (int i = 0; i < RestoreIds.Count; i++)
             {
-                return;
-            }
-
-            for (int i = 0; i < restoreIds.Count; i++)
-            {
-                int id = restoreIds[i];
+                int id = RestoreIds[i];
                 TrackedObject tracked;
                 if (!TrackedObjects.TryGetValue(id, out tracked))
                 {
                     continue;
                 }
 
-                RestoreTrackedObject(tracked.Target);
+                RestoreTrackedObject(id, tracked.Target);
                 TrackedObjects.Remove(id);
             }
         }
@@ -113,21 +144,23 @@ namespace ShrinkCart
                 return;
             }
 
-            List<GameObject> targets = new List<GameObject>();
+            RestoreTargets.Clear();
             foreach (TrackedObject tracked in TrackedObjects.Values)
             {
                 if (tracked.Target != null)
                 {
-                    targets.Add(tracked.Target);
+                    RestoreTargets.Add(tracked.Target);
                 }
             }
 
             TrackedObjects.Clear();
 
-            for (int i = 0; i < targets.Count; i++)
+            for (int i = 0; i < RestoreTargets.Count; i++)
             {
-                RestoreTrackedObject(targets[i]);
+                RestoreTrackedObject(RestoreTargets[i].GetInstanceID(), RestoreTargets[i]);
             }
+
+            RestoreTargets.Clear();
         }
 
         private static void TrackOrShrink(PhysGrabObject item, ShrinkCategory category, float factor)
@@ -144,6 +177,11 @@ namespace ShrinkCart
             {
                 tracked.LastSeenTime = Time.time;
                 tracked.Category = category;
+                return;
+            }
+
+            if (IsInReshrinkCooldown(id))
+            {
                 return;
             }
 
@@ -183,12 +221,14 @@ namespace ShrinkCart
             DebugLog("Shrunk " + target.name + " as " + category + " factor=" + factor.ToString("0.###"));
         }
 
-        private static void RestoreTrackedObject(GameObject target)
+        private static void RestoreTrackedObject(int id, GameObject target)
         {
             if (target == null)
             {
                 return;
             }
+
+            BeginReshrinkCooldown(id);
 
             try
             {
@@ -231,11 +271,44 @@ namespace ShrinkCart
             ScaleOptionsField.SetValue(controller, options);
         }
 
-        private static bool IsShrinkCandidate(PhysGrabObject item, out ShrinkCategory category, out float factor)
+        private static bool TryGetShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)
         {
             category = ShrinkCategory.Fallback;
             factor = 1.0f;
 
+            if (!PassesFastCandidateChecks(item))
+            {
+                return false;
+            }
+
+            int id = item.gameObject.GetInstanceID();
+            if (IsInReshrinkCooldown(id))
+            {
+                return false;
+            }
+
+            CachedShrinkData cached;
+            if (ShrinkDataCache.TryGetValue(id, out cached) && cached.ConfigVersion == ModConfig.ScalingConfigVersion)
+            {
+                category = cached.Category;
+                factor = cached.Factor;
+                return cached.CanShrink;
+            }
+
+            bool canShrink = ResolveShrinkData(item, out category, out factor);
+            ShrinkDataCache[id] = new CachedShrinkData
+            {
+                ConfigVersion = ModConfig.ScalingConfigVersion,
+                CanShrink = canShrink,
+                Category = category,
+                Factor = factor
+            };
+
+            return canShrink;
+        }
+
+        private static bool PassesFastCandidateChecks(PhysGrabObject item)
+        {
             if (item == null || item.gameObject == null)
             {
                 return false;
@@ -268,11 +341,15 @@ namespace ShrinkCart
             }
 
             string cleanName = CleanName(item.name);
-            if (cleanName == "Item Cart Cannon" || cleanName == "Item Cart Laser")
-            {
-                return false;
-            }
+            return cleanName != "Item Cart Cannon" && cleanName != "Item Cart Laser";
+        }
 
+        private static bool ResolveShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)
+        {
+            category = ShrinkCategory.Fallback;
+            factor = 1.0f;
+
+            string cleanName = CleanName(item.name);
             if (!TryResolveCategory(item, cleanName, out category))
             {
                 if (!ModConfig.ShrinkNonValuableItems.Value)
@@ -379,6 +456,52 @@ namespace ShrinkCart
             }
 
             return false;
+        }
+
+        private static void BeginReshrinkCooldown(int id)
+        {
+            ReshrinkCooldownUntil[id] = Time.time + ModConfig.SafeRestoreGraceSeconds();
+        }
+
+        private static bool IsInReshrinkCooldown(int id)
+        {
+            float until;
+            if (!ReshrinkCooldownUntil.TryGetValue(id, out until))
+            {
+                return false;
+            }
+
+            if (Time.time < until)
+            {
+                return true;
+            }
+
+            ReshrinkCooldownUntil.Remove(id);
+            return false;
+        }
+
+        private static void ClearExpiredCooldowns(float now)
+        {
+            if (ReshrinkCooldownUntil.Count == 0)
+            {
+                return;
+            }
+
+            ExpiredCooldownIds.Clear();
+            foreach (KeyValuePair<int, float> pair in ReshrinkCooldownUntil)
+            {
+                if (now >= pair.Value)
+                {
+                    ExpiredCooldownIds.Add(pair.Key);
+                }
+            }
+
+            for (int i = 0; i < ExpiredCooldownIds.Count; i++)
+            {
+                ReshrinkCooldownUntil.Remove(ExpiredCooldownIds[i]);
+            }
+
+            ExpiredCooldownIds.Clear();
         }
 
         private static string CleanName(string name)

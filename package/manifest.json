@@ -1,8 +1,8 @@
 {
   "name": "ShrinkCart",
-  "version_number": "0.2.0",
+  "version_number": "0.2.1",
   "website_url": "https://github.com/AngelcoMilk/ShrinkCart",
-  "description": "Automatically shrinks items placed in C.A.R.T carts with configurable category scale factors, Chinese REPOConfig options, smooth restore, and optional vehicle crush instant-kill.",
+  "description": "Automatically shrinks cart items with host-authoritative category scaling, restore cooldown, Chinese REPOConfig options, and optional enemy-in-cart instant kill.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305",
     "Vippy-ScalerCore-0.5.2",

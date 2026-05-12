@@ -9,9 +9,6 @@ namespace ShrinkCart
             internal bool PlayerLogic;
             internal bool PlayerKill;
             internal int PlayerDamage;
-            internal bool EnemyLogic;
-            internal bool EnemyKill;
-            internal int EnemyDamage;
         }
 
         private sealed class HurtColliderState
@@ -20,9 +17,6 @@ namespace ShrinkCart
             internal bool PlayerLogic;
             internal bool PlayerKill;
             internal int PlayerDamage;
-            internal bool EnemyLogic;
-            internal bool EnemyKill;
-            internal int EnemyDamage;
         }
 
         private static readonly Dictionary<int, HurtColliderState> States =
@@ -40,6 +34,14 @@ namespace ShrinkCart
             ConfigureCollider(vehicle.hurtColliderBig);
         }
 
+        internal static void RefreshAll()
+        {
+            foreach (HurtColliderState state in States.Values)
+            {
+                ConfigureCollider(state.Collider);
+            }
+        }
+
         internal static TemporaryHurtState BeforePlayerHurt(HurtCollider collider)
         {
             if (collider == null || !ModConfig.VehicleCrushInstantKill.Value || !IsVehicleCollider(collider))
@@ -54,20 +56,6 @@ namespace ShrinkCart
             return state;
         }
 
-        internal static TemporaryHurtState BeforeEnemyHurt(HurtCollider collider)
-        {
-            if (collider == null || !ModConfig.VehicleCrushKillEnemies.Value || !IsVehicleCollider(collider))
-            {
-                return null;
-            }
-
-            TemporaryHurtState state = Capture(collider);
-            collider.enemyLogic = true;
-            collider.enemyKill = true;
-            DebugLog("Vehicle crush enemy kill armed.");
-            return state;
-        }
-
         internal static void AfterHurt(HurtCollider collider, TemporaryHurtState state)
         {
             if (collider == null || state == null)
@@ -78,16 +66,13 @@ namespace ShrinkCart
             collider.playerLogic = state.PlayerLogic;
             collider.playerKill = state.PlayerKill;
             collider.playerDamage = state.PlayerDamage;
-            collider.enemyLogic = state.EnemyLogic;
-            collider.enemyKill = state.EnemyKill;
-            collider.enemyDamage = state.EnemyDamage;
         }
 
         internal static void RestoreAll()
         {
             foreach (HurtColliderState state in States.Values)
             {
-                RestoreAllFields(state);
+                RestorePlayerFields(state);
             }
 
             States.Clear();
@@ -111,16 +96,6 @@ namespace ShrinkCart
             {
                 RestorePlayerFields(state);
             }
-
-            if (ModConfig.VehicleCrushKillEnemies.Value)
-            {
-                collider.enemyLogic = true;
-                collider.enemyKill = true;
-            }
-            else
-            {
-                RestoreEnemyFields(state);
-            }
         }
 
         private static bool IsVehicleCollider(HurtCollider collider)
@@ -142,10 +117,7 @@ namespace ShrinkCart
                 Collider = collider,
                 PlayerLogic = collider.playerLogic,
                 PlayerKill = collider.playerKill,
-                PlayerDamage = collider.playerDamage,
-                EnemyLogic = collider.enemyLogic,
-                EnemyKill = collider.enemyKill,
-                EnemyDamage = collider.enemyDamage
+                PlayerDamage = collider.playerDamage
             };
 
             States[id] = state;
@@ -158,17 +130,8 @@ namespace ShrinkCart
             {
                 PlayerLogic = collider.playerLogic,
                 PlayerKill = collider.playerKill,
-                PlayerDamage = collider.playerDamage,
-                EnemyLogic = collider.enemyLogic,
-                EnemyKill = collider.enemyKill,
-                EnemyDamage = collider.enemyDamage
+                PlayerDamage = collider.playerDamage
             };
-        }
-
-        private static void RestoreAllFields(HurtColliderState state)
-        {
-            RestorePlayerFields(state);
-            RestoreEnemyFields(state);
         }
 
         private static void RestorePlayerFields(HurtColliderState state)
@@ -181,18 +144,6 @@ namespace ShrinkCart
             state.Collider.playerLogic = state.PlayerLogic;
             state.Collider.playerKill = state.PlayerKill;
             state.Collider.playerDamage = state.PlayerDamage;
-        }
-
-        private static void RestoreEnemyFields(HurtColliderState state)
-        {
-            if (state == null || state.Collider == null)
-            {
-                return;
-            }
-
-            state.Collider.enemyLogic = state.EnemyLogic;
-            state.Collider.enemyKill = state.EnemyKill;
-            state.Collider.enemyDamage = state.EnemyDamage;
         }
 
         private static void DebugLog(string message)

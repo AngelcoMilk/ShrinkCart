@@ -1,3 +1,4 @@
+using System;
 using BepInEx.Configuration;
 using UnityEngine;
 
@@ -56,8 +57,10 @@ namespace ShrinkCart
         internal static ConfigEntry<float> FallbackScaleFactor;
 
         internal static ConfigEntry<bool> VehicleCrushInstantKill;
-        internal static ConfigEntry<bool> VehicleCrushKillEnemies;
+        internal static ConfigEntry<bool> EnemyInCartInstantKill;
         internal static ConfigEntry<bool> DebugLogging;
+
+        internal static int ScalingConfigVersion;
 
         internal static void Bind(ConfigFile config)
         {
@@ -70,20 +73,20 @@ namespace ShrinkCart
             CartScaleSpeed = config.Bind(
                 "购物车",
                 "放入时缩小速度",
-                2.5f,
+                0.9f,
                 Ranged("ScalerCore 缩小动画速度。数值越大越快。", 0.1f, 20.0f));
 
             RestoreScaleSpeed = config.Bind(
                 "购物车",
                 "取出后放大速度",
-                0.75f,
+                0.55f,
                 Ranged("正常取出购物车后的 ScalerCore 放大动画速度。数值越小越慢。", 0.1f, 20.0f));
 
             RestoreGraceSeconds = config.Bind(
                 "购物车",
                 "取出后恢复延迟",
-                0.2f,
-                Ranged("物品离开购物车检测后，等待多少秒开始恢复原尺寸。", 0.05f, 10.0f));
+                0.5f,
+                Ranged("物品离开购物车检测后，等待多少秒开始恢复原尺寸。恢复后的重新缩小冷却也使用这个时间。", 0.05f, 10.0f));
 
             PreserveCartMass = config.Bind(
                 "购物车",
@@ -108,15 +111,15 @@ namespace ShrinkCart
             SmallEnabled = BindCategoryEnabled(config, "Small 小贵重物", true);
             SmallScaleFactor = BindCategoryFactor(config, "Small 小贵重物", 0.45f);
             MediumEnabled = BindCategoryEnabled(config, "Medium 中贵重物", true);
-            MediumScaleFactor = BindCategoryFactor(config, "Medium 中贵重物", 0.35f);
+            MediumScaleFactor = BindCategoryFactor(config, "Medium 中贵重物", 0.33f);
             BigEnabled = BindCategoryEnabled(config, "Big 大贵重物", true);
-            BigScaleFactor = BindCategoryFactor(config, "Big 大贵重物", 0.3f);
+            BigScaleFactor = BindCategoryFactor(config, "Big 大贵重物", 0.2f);
             WideEnabled = BindCategoryEnabled(config, "Wide 宽贵重物", true);
-            WideScaleFactor = BindCategoryFactor(config, "Wide 宽贵重物", 0.3f);
+            WideScaleFactor = BindCategoryFactor(config, "Wide 宽贵重物", 0.2f);
             TallEnabled = BindCategoryEnabled(config, "Tall 高贵重物", true);
-            TallScaleFactor = BindCategoryFactor(config, "Tall 高贵重物", 0.28f);
+            TallScaleFactor = BindCategoryFactor(config, "Tall 高贵重物", 0.3f);
             VeryTallEnabled = BindCategoryEnabled(config, "VeryTall 超高贵重物", true);
-            VeryTallScaleFactor = BindCategoryFactor(config, "VeryTall 超高贵重物", 0.25f);
+            VeryTallScaleFactor = BindCategoryFactor(config, "VeryTall 超高贵重物", 0.2f);
 
             EnemyOrbEnabled = config.Bind(
                 "敌人球",
@@ -139,13 +142,13 @@ namespace ShrinkCart
             EnemyOrbBigScaleFactor = config.Bind(
                 "敌人球",
                 "Big 敌人球倍率",
-                0.25f,
+                0.2f,
                 Ranged("Big 敌人球放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             EnemyOrbBerserkerScaleFactor = config.Bind(
                 "敌人球",
                 "Berserker 敌人球倍率",
-                0.25f,
+                0.2f,
                 Ranged("Berserker 敌人球放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             SurplusEnabled = config.Bind(
@@ -172,17 +175,49 @@ namespace ShrinkCart
                 false,
                 "启用后，C.A.R.T / 购物车车辆撞击玩家时会按秒杀处理。建议所有玩家都安装本 mod。");
 
-            VehicleCrushKillEnemies = config.Bind(
+            EnemyInCartInstantKill = config.Bind(
                 "车辆碾压",
-                "车辆碾压秒杀敌人",
-                false,
-                "启用后，C.A.R.T / 购物车车辆撞击敌人时会按秒杀处理。");
+                "敌人进车秒杀",
+                LegacyBool(config, true, "车辆碾压", "车辆碾压秒杀敌人", "VehicleCrush", "InstantKillEnemies"),
+                "启用后，敌人或敌人刚体进入购物车时会立刻死亡。此功能复刻 ShrinkerCartPlus 的敌人进车秒杀逻辑。");
 
             DebugLogging = config.Bind(
                 "诊断",
                 "启用调试日志",
                 false,
-                "启用后，在 BepInEx 日志中写入更多缩小、恢复、碾压识别信息。");
+                "启用后，在 BepInEx 日志中写入更多缩小、恢复、敌人进车和碾压识别信息。");
+
+            WatchScaling(CartShrinkingEnabled);
+            WatchScaling(CartScaleSpeed);
+            WatchScaling(RestoreScaleSpeed);
+            WatchScaling(RestoreGraceSeconds);
+            WatchScaling(PreserveCartMass);
+            WatchScaling(ShrinkNonValuableItems);
+            WatchScaling(SuppressValuableDamageRestore);
+            WatchScaling(TinyEnabled);
+            WatchScaling(TinyScaleFactor);
+            WatchScaling(SmallEnabled);
+            WatchScaling(SmallScaleFactor);
+            WatchScaling(MediumEnabled);
+            WatchScaling(MediumScaleFactor);
+            WatchScaling(BigEnabled);
+            WatchScaling(BigScaleFactor);
+            WatchScaling(WideEnabled);
+            WatchScaling(WideScaleFactor);
+            WatchScaling(TallEnabled);
+            WatchScaling(TallScaleFactor);
+            WatchScaling(VeryTallEnabled);
+            WatchScaling(VeryTallScaleFactor);
+            WatchScaling(EnemyOrbEnabled);
+            WatchScaling(EnemyOrbSmallScaleFactor);
+            WatchScaling(EnemyOrbMediumScaleFactor);
+            WatchScaling(EnemyOrbBigScaleFactor);
+            WatchScaling(EnemyOrbBerserkerScaleFactor);
+            WatchScaling(SurplusEnabled);
+            WatchScaling(SurplusScaleFactor);
+            WatchScaling(FallbackScaleFactor);
+
+            VehicleCrushInstantKill.SettingChanged += delegate { VehicleCrushController.RefreshAll(); };
         }
 
         internal static float SafeScaleSpeed()
@@ -272,6 +307,30 @@ namespace ShrinkCart
         private static float SafeFactor(float value)
         {
             return Mathf.Clamp(value, 0.05f, 1.0f);
+        }
+
+        private static bool LegacyBool(ConfigFile config, bool defaultValue, params string[] sectionKeyPairs)
+        {
+            for (int i = 0; i + 1 < sectionKeyPairs.Length; i += 2)
+            {
+                ConfigEntry<bool> entry;
+                if (config.TryGetEntry(sectionKeyPairs[i], sectionKeyPairs[i + 1], out entry))
+                {
+                    return entry.Value;
+                }
+            }
+
+            return defaultValue;
+        }
+
+        private static void WatchScaling<T>(ConfigEntry<T> entry)
+        {
+            entry.SettingChanged += OnScalingSettingChanged;
+        }
+
+        private static void OnScalingSettingChanged(object sender, EventArgs args)
+        {
+            ScalingConfigVersion++;
         }
     }
 }
