@@ -1,4 +1,4 @@
-# ShrinkCart v0.2.6
+# ShrinkCart v0.2.7
 
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
@@ -11,7 +11,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 ## 依赖
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-0.5.2`
+- `Vippy-ScalerCore-0.6.0`
 - `nickklmao-REPOConfig-1.2.6`
 
 Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确保这些依赖和 ShrinkCart 安装在同一个 R.E.P.O. 配置文件中。
@@ -20,7 +20,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确�
 
 推荐房间里所有玩家都安装 ShrinkCart 和上述依赖。主机负责决定缩放倍率、商店/人物用品是否参与缩放、离车恢复时机和敌人进车秒杀；ScalerCore 负责把实际缩放状态同步给客户端。
 
-v0.2.5 起增加了主机配置快照同步。客户端本地配置与主机不同也不会改变缩放大小；只要客户端也安装 ShrinkCart，就会按主机设置隐藏购物车缩放时的闪光和冲击声音。只装 ScalerCore、没有安装 ShrinkCart 的客户端仍可能看到 ScalerCore 默认特效。
+v0.2.7 升级到 ScalerCore 0.6.0 后，缩放倍率、速度、恢复速度、隐藏闪光/声音都会由主机计算后通过 ScalerCore 同步。客户端本地配置与主机不同也不会改变缩放结果；推荐所有玩家都安装 ShrinkCart、ScalerCore 0.6.0 和 REPOConfig。
 
 ## 主要功能
 
@@ -32,7 +32,7 @@ v0.2.5 起增加了主机配置快照同步。客户端本地配置与主机不�
 - **R.E.P.O. 4.0 适配**：优先读取游戏新版本内置 `ValuableObject.volumeType` 来判断贵重物大小分类。
 - **主机同步**：多人游戏里以主机配置为准，缩放参数通过 ScalerCore 同步，ShrinkCart 配置快照通过 Photon 房间属性同步。
 - **边缘防抖**：物品在购物车边缘短暂离开时不会立刻放大，减少反复缩放抽搐。
-- **隐藏缩放闪光/声音**：默认隐藏购物车缩小/恢复时的 ScalerCore 冲击特效，不关闭普通碰撞特效。
+- **隐藏缩放闪光/声音**：默认通过 ScalerCore 0.6.0 的官方选项隐藏购物车缩小/恢复时的冲击特效和恢复镜头震动。
 - **车撞车优化**：不再常驻改写车辆 hurt collider，减少两辆车相撞时的额外开销。
 - **可选危险功能**：可开启敌人进车秒杀，也可开启车辆碾压秒杀玩家。
 
@@ -74,7 +74,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.6 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.7 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
 
 ## 安装（r2modman）
 
@@ -87,12 +87,12 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 
 - 缩放动画由 ScalerCore 控制，ShrinkCart 不重写底层缩放系统。
 - 如果 ScalerCore 因碰撞、安全恢复、对象禁用或同步保护选择瞬间恢复，ShrinkCart 不会强行绕过它。
-- 隐藏闪光和声音只屏蔽 ShrinkCart 购物车缩放流程里的 ScalerCore 冲击特效。
+- 隐藏闪光和声音依赖 ScalerCore 0.6.0 的缩放选项；未安装对应依赖的玩家可能看到不一致效果。
 - 如果其他缩放类 mod 已经控制同一个物品，ShrinkCart 会尽量避免覆盖已经处于缩放状态的对象。
 
 ---
 
-# ShrinkCart v0.2.6
+# ShrinkCart v0.2.7
 
 A shrink-hauler cart for R.E.P.O. 4.0.
 
@@ -105,14 +105,14 @@ ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart 
 ## Dependencies
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-0.5.2`
+- `Vippy-ScalerCore-0.6.0`
 - `nickklmao-REPOConfig-1.2.6`
 
 ## Recommended Multiplayer Setup
 
 All players in the room should install ShrinkCart and its dependencies. The host decides scale factors, shop/player item filtering, restore timing, and enemy-in-cart instant kill. ScalerCore syncs the actual scale state, while ShrinkCart syncs a host config snapshot for consistent client-side visuals.
 
-Clients with ShrinkCart installed can hide cart-scale flashes and impact sounds according to the host settings. Clients without ShrinkCart may still see ScalerCore default effects.
+With ScalerCore 0.6.0, the host's scale factor, shrink speed, restore speed, and quiet visual/audio options are sent through ScalerCore's multiplayer sync. Client-side config cannot override the host result.
 
 ## Features
 
@@ -124,7 +124,7 @@ Clients with ShrinkCart installed can hide cart-scale flashes and impact sounds 
 - Built for R.E.P.O. 4.0, using `ValuableObject.volumeType` for valuable size categories.
 - Host-authoritative scaling through ScalerCore multiplayer sync plus ShrinkCart host config snapshots.
 - Cart-edge debounce to prevent rapid shrink/restore jitter.
-- Hidden cart-scale impact flash and sound by default.
+- Hidden cart-scale impact flash, sound, and restore camera shake by default through ScalerCore 0.6.0 options.
 - Reduced vehicle collision overhead by avoiding persistent hurt collider edits.
 - Optional enemy-in-cart instant kill and optional player vehicle-crush instant kill.
 
@@ -156,7 +156,7 @@ Special items from newer R.E.P.O. versions are also supported through the game's
 
 ## Configuration
 
-Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.6 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.7 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
 
 ## Installation (r2modman)
 
