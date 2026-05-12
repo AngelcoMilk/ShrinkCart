@@ -1,0 +1,10 @@
+{
+  "name": "ShrinkCart",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/AngelcoMilk/ShrinkCart",
+  "description": "Automatically shrinks items placed in carts and smoothly restores them when removed. Includes optional vehicle crush instant-kill.",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2305",
+    "Vippy-ScalerCore-0.5.2"
+  ]
+}
