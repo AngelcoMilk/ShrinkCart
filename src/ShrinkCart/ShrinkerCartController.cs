@@ -64,7 +64,6 @@ namespace ShrinkCart
             RestoreIds.Clear();
             ExpiredCooldownIds.Clear();
             RestoreTargets.Clear();
-            CartScaleVisualEffects.Reset();
             _nextTickTime = 0.0f;
         }
 
@@ -77,27 +76,17 @@ namespace ShrinkCart
 
             if (!IsHostOrSingleplayer())
             {
-                if (ShouldMarkPotentialClientCartScale(item))
-                {
-                    CartScaleVisualEffects.MarkCartObject(item.gameObject);
-                }
-
                 return;
             }
 
             if (EnemyInCartKillController.TryKill(item))
             {
-                CartScaleVisualEffects.UnmarkCartObject(item.gameObject);
                 return;
             }
 
             ShrinkCategory category = ShrinkCategory.Fallback;
             float factor = 1.0f;
             bool canShrink = ModConfig.CartShrinkingEnabled.Value && TryGetShrinkData(item, out category, out factor);
-            if (canShrink)
-            {
-                CartScaleVisualEffects.MarkCartObject(item.gameObject);
-            }
 
             if (canShrink)
             {
@@ -120,7 +109,6 @@ namespace ShrinkCart
 
             _nextTickTime = now + TickIntervalSeconds;
             ClearExpiredCooldowns(now);
-            CartScaleVisualEffects.ClearExpiredPending(now);
 
             if (!ModConfig.CartShrinkingEnabled.Value)
             {
@@ -202,7 +190,6 @@ namespace ShrinkCart
                 tracked.LastSeenInCartTime = now;
                 tracked.EarliestRestoreTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
                 tracked.Category = category;
-                CartScaleVisualEffects.MarkCartObject(target);
                 return;
             }
 
@@ -223,19 +210,19 @@ namespace ShrinkCart
             options.AllowedTargets = ScaleTargets.Valuables | ScaleTargets.Items;
             options.SuppressValueDropExpand = ModConfig.SuppressValuableDamageRestore.Value;
             options.PreserveMass = ModConfig.PreserveCartMass.Value;
+            options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
+            options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
+            options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
 
             try
             {
-                CartScaleVisualEffects.MarkCartObject(target);
                 if (!ScaleManager.ApplyIfNotScaled(target, options))
                 {
-                    CartScaleVisualEffects.UnmarkCartObject(target);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                CartScaleVisualEffects.UnmarkCartObject(target);
                 Plugin.Log.LogWarning("Failed to shrink " + target.name + ": " + ex.Message);
                 return;
             }
@@ -264,19 +251,15 @@ namespace ShrinkCart
             {
                 if (!ScaleManager.IsScaled(target))
                 {
-                    CartScaleVisualEffects.UnmarkCartObject(target);
                     return;
                 }
 
-                CartScaleVisualEffects.MarkCartObject(target);
                 ApplyRestoreSpeed(target);
                 ScaleManager.Restore(target);
-                CartScaleVisualEffects.UnmarkCartObject(target);
                 DebugLog("Restored " + target.name + " speed=" + ModConfig.SafeRestoreScaleSpeed().ToString("0.###"));
             }
             catch (Exception ex)
             {
-                CartScaleVisualEffects.UnmarkCartObject(target);
                 Plugin.Log.LogWarning("Failed to restore " + target.name + ": " + ex.Message);
             }
         }
@@ -301,7 +284,9 @@ namespace ShrinkCart
             }
 
             ScaleOptions options = (ScaleOptions)boxedOptions;
-            options.Speed = ModConfig.SafeRestoreScaleSpeed();
+            options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
+            options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
+            options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
             ScaleOptionsField.SetValue(controller, options);
         }
 
@@ -379,28 +364,6 @@ namespace ShrinkCart
             }
 
             return true;
-        }
-
-        private static bool ShouldMarkPotentialClientCartScale(PhysGrabObject item)
-        {
-            if (!PassesFastCandidateChecks(item))
-            {
-                return false;
-            }
-
-            string cleanName = CleanName(item.name);
-            ShrinkCategory category;
-            if (TryResolveCategory(item, cleanName, out category))
-            {
-                return HostConfigSync.ShouldMarkCategoryForVisual(category);
-            }
-
-            if (IsShopPlayerItem(item))
-            {
-                return HostConfigSync.ShouldMarkShopPlayerItemForVisual();
-            }
-
-            return HostConfigSync.ShouldMarkNonValuableItemForVisual();
         }
 
         private static bool ResolveShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)
