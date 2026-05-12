@@ -1,5 +1,4 @@
 using HarmonyLib;
-using ScalerCore;
 
 namespace ShrinkCart
 {
@@ -26,92 +25,12 @@ namespace ShrinkCart
         }
     }
 
-    [HarmonyPatch(typeof(ScaleController), "DispatchShrink")]
-    internal static class ScaleControllerDispatchShrinkPatch
-    {
-        private static void Prefix(ScaleController __instance, out bool __state)
-        {
-            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
-        }
-
-        private static void Postfix(bool __state)
-        {
-            CartScaleVisualEffects.EndScalerCoreDispatch(__state);
-        }
-    }
-
-    [HarmonyPatch(typeof(ScaleController), "DispatchExpand")]
-    internal static class ScaleControllerDispatchExpandPatch
-    {
-        private static void Prefix(ScaleController __instance, out bool __state)
-        {
-            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
-        }
-
-        private static void Postfix(ScaleController __instance, bool __state)
-        {
-            CartScaleVisualEffects.EndScalerCoreExpandDispatch(__state, __instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(ScaleController), "DispatchExpandNow")]
-    internal static class ScaleControllerDispatchExpandNowPatch
-    {
-        private static void Prefix(ScaleController __instance, out bool __state)
-        {
-            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
-        }
-
-        private static void Postfix(ScaleController __instance, bool __state)
-        {
-            CartScaleVisualEffects.EndScalerCoreExpandDispatch(__state, __instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(ScaleController), "RPC_Shrink")]
-    internal static class ScaleControllerRpcShrinkPatch
-    {
-        private static void Prefix(ScaleController __instance, out bool __state)
-        {
-            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
-        }
-
-        private static void Postfix(bool __state)
-        {
-            CartScaleVisualEffects.EndScalerCoreDispatch(__state);
-        }
-    }
-
-    [HarmonyPatch(typeof(ScaleController), "RPC_Expand")]
-    internal static class ScaleControllerRpcExpandPatch
-    {
-        private static void Prefix(ScaleController __instance, out bool __state)
-        {
-            __state = CartScaleVisualEffects.BeginScalerCoreDispatch(__instance);
-        }
-
-        private static void Postfix(ScaleController __instance, bool __state)
-        {
-            CartScaleVisualEffects.EndScalerCoreExpandDispatch(__state, __instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(AssetManager), "PhysImpactEffect")]
-    internal static class AssetManagerPhysImpactEffectPatch
-    {
-        private static bool Prefix()
-        {
-            return !CartScaleVisualEffects.ShouldSuppressPhysImpactEffect();
-        }
-    }
-
     [HarmonyPatch(typeof(RunManager), "ChangeLevel")]
     internal static class RunManagerChangeLevelPatch
     {
         private static void Prefix()
         {
             ShrinkerCartController.RestoreAll();
-            CartScaleVisualEffects.Reset();
             VehicleCrushController.RestoreAll();
             EnemyInCartKillController.Reset();
             HostConfigSync.Reset();
