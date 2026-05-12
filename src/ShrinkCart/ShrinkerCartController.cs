@@ -13,7 +13,8 @@ namespace ShrinkCart
         private sealed class TrackedObject
         {
             internal GameObject Target;
-            internal float LastSeenTime;
+            internal float LastSeenInCartTime;
+            internal float EarliestRestoreTime;
             internal ShrinkCategory Category;
         }
 
@@ -51,34 +52,37 @@ namespace ShrinkCart
             RestoreIds.Clear();
             ExpiredCooldownIds.Clear();
             RestoreTargets.Clear();
+            CartScaleVisualEffects.Reset();
             _nextTickTime = 0.0f;
         }
 
         internal static void ProcessCartObject(PhysGrabInCart inCart, PhysGrabObject item)
         {
-            if (!IsHostOrSingleplayer())
+            if (inCart == null || inCart.cart == null || item == null)
             {
                 return;
             }
 
-            if (inCart == null || inCart.cart == null || item == null)
+            ShrinkCategory category = ShrinkCategory.Fallback;
+            float factor = 1.0f;
+            bool canShrink = ModConfig.CartShrinkingEnabled.Value && TryGetShrinkData(item, out category, out factor);
+            if (canShrink)
+            {
+                CartScaleVisualEffects.MarkCartObject(item.gameObject);
+            }
+
+            if (!IsHostOrSingleplayer())
             {
                 return;
             }
 
             if (EnemyInCartKillController.TryKill(item))
             {
+                CartScaleVisualEffects.UnmarkCartObject(item.gameObject);
                 return;
             }
 
-            if (!ModConfig.CartShrinkingEnabled.Value)
-            {
-                return;
-            }
-
-            ShrinkCategory category;
-            float factor;
-            if (TryGetShrinkData(item, out category, out factor))
+            if (canShrink)
             {
                 TrackOrShrink(item, category, factor);
             }
@@ -99,6 +103,7 @@ namespace ShrinkCart
 
             _nextTickTime = now + TickIntervalSeconds;
             ClearExpiredCooldowns(now);
+            CartScaleVisualEffects.ClearExpiredPending(now);
 
             if (!ModConfig.CartShrinkingEnabled.Value)
             {
@@ -111,13 +116,14 @@ namespace ShrinkCart
                 return;
             }
 
-            float grace = ModConfig.SafeRestoreGraceSeconds();
+            float leaveDebounce = ModConfig.SafeCartLeaveDebounceSeconds();
             RestoreIds.Clear();
 
             foreach (KeyValuePair<int, TrackedObject> pair in TrackedObjects)
             {
                 TrackedObject tracked = pair.Value;
-                if (tracked.Target == null || now - tracked.LastSeenTime > grace)
+                if (tracked.Target == null ||
+                    (now - tracked.LastSeenInCartTime >= leaveDebounce && now >= tracked.EarliestRestoreTime))
                 {
                     RestoreIds.Add(pair.Key);
                 }
@@ -172,11 +178,14 @@ namespace ShrinkCart
             }
 
             int id = target.GetInstanceID();
+            float now = Time.time;
             TrackedObject tracked;
             if (TrackedObjects.TryGetValue(id, out tracked))
             {
-                tracked.LastSeenTime = Time.time;
+                tracked.LastSeenInCartTime = now;
+                tracked.EarliestRestoreTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
                 tracked.Category = category;
+                CartScaleVisualEffects.MarkCartObject(target);
                 return;
             }
 
@@ -200,13 +209,16 @@ namespace ShrinkCart
 
             try
             {
+                CartScaleVisualEffects.MarkCartObject(target);
                 if (!ScaleManager.ApplyIfNotScaled(target, options))
                 {
+                    CartScaleVisualEffects.UnmarkCartObject(target);
                     return;
                 }
             }
             catch (Exception ex)
             {
+                CartScaleVisualEffects.UnmarkCartObject(target);
                 Plugin.Log.LogWarning("Failed to shrink " + target.name + ": " + ex.Message);
                 return;
             }
@@ -214,7 +226,8 @@ namespace ShrinkCart
             TrackedObjects[id] = new TrackedObject
             {
                 Target = target,
-                LastSeenTime = Time.time,
+                LastSeenInCartTime = now,
+                EarliestRestoreTime = now + ModConfig.SafeCartLeaveDebounceSeconds(),
                 Category = category
             };
 
@@ -234,15 +247,19 @@ namespace ShrinkCart
             {
                 if (!ScaleManager.IsScaled(target))
                 {
+                    CartScaleVisualEffects.UnmarkCartObject(target);
                     return;
                 }
 
+                CartScaleVisualEffects.MarkCartObject(target);
                 ApplyRestoreSpeed(target);
                 ScaleManager.Restore(target);
+                CartScaleVisualEffects.UnmarkCartObject(target);
                 DebugLog("Restored " + target.name + " speed=" + ModConfig.SafeRestoreScaleSpeed().ToString("0.###"));
             }
             catch (Exception ex)
             {
+                CartScaleVisualEffects.UnmarkCartObject(target);
                 Plugin.Log.LogWarning("Failed to restore " + target.name + ": " + ex.Message);
             }
         }
@@ -460,7 +477,7 @@ namespace ShrinkCart
 
         private static void BeginReshrinkCooldown(int id)
         {
-            ReshrinkCooldownUntil[id] = Time.time + ModConfig.SafeRestoreGraceSeconds();
+            ReshrinkCooldownUntil[id] = Time.time + ModConfig.SafeReshrinkCooldownSeconds();
         }
 
         private static bool IsInReshrinkCooldown(int id)

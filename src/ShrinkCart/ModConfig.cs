@@ -26,10 +26,12 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> CartShrinkingEnabled;
         internal static ConfigEntry<float> CartScaleSpeed;
         internal static ConfigEntry<float> RestoreScaleSpeed;
-        internal static ConfigEntry<float> RestoreGraceSeconds;
+        internal static ConfigEntry<float> CartLeaveDebounceSeconds;
+        internal static ConfigEntry<float> ReshrinkCooldownSeconds;
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkNonValuableItems;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
+        internal static ConfigEntry<bool> HideScaleFlash;
 
         internal static ConfigEntry<bool> TinyEnabled;
         internal static ConfigEntry<float> TinyScaleFactor;
@@ -82,17 +84,23 @@ namespace ShrinkCart
                 0.55f,
                 Ranged("正常取出购物车后的 ScalerCore 放大动画速度。数值越小越慢。", 0.1f, 20.0f));
 
-            RestoreGraceSeconds = config.Bind(
+            CartLeaveDebounceSeconds = config.Bind(
                 "购物车",
-                "取出后恢复延迟",
-                0.5f,
-                Ranged("物品离开购物车检测后，等待多少秒开始恢复原尺寸。恢复后的重新缩小冷却也使用这个时间。", 0.05f, 10.0f));
+                "离车防抖延迟",
+                2.5f,
+                Ranged("物品触发缩小后，离开购物车检测范围多久才开始恢复原尺寸。调高可减少车边缘抽搐。", 0.1f, 10.0f));
+
+            ReshrinkCooldownSeconds = config.Bind(
+                "购物车",
+                "恢复后重新缩小冷却",
+                LegacyFloat(config, 0.5f, "购物车", "取出后恢复延迟", "Cart", "RestoreGraceSeconds"),
+                Ranged("物品开始恢复后，等待多少秒才允许再次被购物车缩小。", 0.05f, 10.0f));
 
             PreserveCartMass = config.Bind(
                 "购物车",
                 "保持原始重量",
                 true,
-                "启用后只改变视觉尺寸，不降低物品重量，避免购物车承重过于作弊。");
+                "启用后只改变视觉尺寸，不降低物品重量，避免购物车承重过于取巧。");
 
             ShrinkNonValuableItems = config.Bind(
                 "购物车",
@@ -106,8 +114,14 @@ namespace ShrinkCart
                 true,
                 "启用后，贵重物品在购物车里轻微碰撞时不会立刻弹回原尺寸。ScalerCore 的安全恢复仍会保留。");
 
-            TinyEnabled = BindCategoryEnabled(config, "Tiny 小型贵重物", true);
-            TinyScaleFactor = BindCategoryFactor(config, "Tiny 小型贵重物", 0.55f);
+            HideScaleFlash = config.Bind(
+                "视觉",
+                "隐藏缩放闪光",
+                true,
+                "启用后，隐藏 ShrinkCart 购物车缩小和恢复时由 ScalerCore 触发的冲击闪光。不会关闭普通碰撞特效。");
+
+            TinyEnabled = BindCategoryEnabled(config, "Tiny 微型贵重物", true);
+            TinyScaleFactor = BindCategoryFactor(config, "Tiny 微型贵重物", 0.55f);
             SmallEnabled = BindCategoryEnabled(config, "Small 小贵重物", true);
             SmallScaleFactor = BindCategoryFactor(config, "Small 小贵重物", 0.45f);
             MediumEnabled = BindCategoryEnabled(config, "Medium 中贵重物", true);
@@ -190,7 +204,8 @@ namespace ShrinkCart
             WatchScaling(CartShrinkingEnabled);
             WatchScaling(CartScaleSpeed);
             WatchScaling(RestoreScaleSpeed);
-            WatchScaling(RestoreGraceSeconds);
+            WatchScaling(CartLeaveDebounceSeconds);
+            WatchScaling(ReshrinkCooldownSeconds);
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkNonValuableItems);
             WatchScaling(SuppressValuableDamageRestore);
@@ -230,9 +245,14 @@ namespace ShrinkCart
             return Mathf.Clamp(RestoreScaleSpeed.Value, 0.1f, 20.0f);
         }
 
-        internal static float SafeRestoreGraceSeconds()
+        internal static float SafeCartLeaveDebounceSeconds()
         {
-            return Mathf.Clamp(RestoreGraceSeconds.Value, 0.05f, 10.0f);
+            return Mathf.Clamp(CartLeaveDebounceSeconds.Value, 0.1f, 10.0f);
+        }
+
+        internal static float SafeReshrinkCooldownSeconds()
+        {
+            return Mathf.Clamp(ReshrinkCooldownSeconds.Value, 0.05f, 10.0f);
         }
 
         internal static bool TryGetScaleFactor(ShrinkCategory category, out float factor)
@@ -314,6 +334,20 @@ namespace ShrinkCart
             for (int i = 0; i + 1 < sectionKeyPairs.Length; i += 2)
             {
                 ConfigEntry<bool> entry;
+                if (config.TryGetEntry(sectionKeyPairs[i], sectionKeyPairs[i + 1], out entry))
+                {
+                    return entry.Value;
+                }
+            }
+
+            return defaultValue;
+        }
+
+        private static float LegacyFloat(ConfigFile config, float defaultValue, params string[] sectionKeyPairs)
+        {
+            for (int i = 0; i + 1 < sectionKeyPairs.Length; i += 2)
+            {
+                ConfigEntry<float> entry;
                 if (config.TryGetEntry(sectionKeyPairs[i], sectionKeyPairs[i + 1], out entry))
                 {
                     return entry.Value;

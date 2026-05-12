@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.1"
+$modVersion = "0.2.2"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -120,6 +120,7 @@ function Test-GameHookTargets {
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
         @{ Type = "ItemVehicle"; Method = "Start"; Parameters = @() },
         @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
+        @{ Type = "AssetManager"; Method = "PhysImpactEffect"; Parameters = @("UnityEngine.Vector3") },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
@@ -185,7 +186,61 @@ function Test-GameHookTargets {
     Write-Host "Validated Harmony hook targets against $AssemblyPath"
 }
 
+function Test-ScalerCoreHookTargets {
+    param(
+        [string]$AssemblyPath,
+        [string]$CecilPath
+    )
+
+    if (!(Test-Path $CecilPath)) {
+        Write-Warning "Mono.Cecil.dll not found; skipping ScalerCore hook target validation."
+        return
+    }
+
+    $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
+    $targets = @(
+        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchShrink"; Parameters = @("ScalerCore.ScaleOptions") },
+        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpand"; Parameters = @() },
+        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpandNow"; Parameters = @() }
+    )
+
+    $errors = New-Object System.Collections.Generic.List[string]
+    foreach ($target in $targets) {
+        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $target.Type -or $_.FullName -eq $target.Type } | Select-Object -First 1
+        if ($null -eq $type) {
+            $errors.Add("Missing type: $($target.Type)")
+            continue
+        }
+
+        $methods = @($type.Methods | Where-Object { $_.Name -eq $target.Method })
+        if ($methods.Count -eq 0) {
+            $errors.Add("Missing method: $($target.Type).$($target.Method)")
+            continue
+        }
+
+        $expectedParameters = @($target.Parameters)
+        $hasCompatibleSignature = $false
+        foreach ($method in $methods) {
+            if ($method.Parameters.Count -eq $expectedParameters.Count) {
+                $hasCompatibleSignature = $true
+                break
+            }
+        }
+
+        if (!$hasCompatibleSignature) {
+            $errors.Add("Incompatible signature: $($target.Type).$($target.Method)($($expectedParameters -join ', '))")
+        }
+    }
+
+    if ($errors.Count -gt 0) {
+        throw "ScalerCore hook target validation failed:`n$($errors -join "`n")"
+    }
+
+    Write-Host "Validated ScalerCore hook targets against $AssemblyPath"
+}
+
 Test-GameHookTargets -AssemblyPath (Join-Path $managed "Assembly-CSharp.dll") -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
+Test-ScalerCoreHookTargets -AssemblyPath $ScalerCoreDll -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
 
 & $csc /nologo /codepage:65001 /target:library /optimize+ /debug:full /nowarn:1701 /out:$pluginOut $refArgs $sources
 if ($LASTEXITCODE -ne 0) {
