@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Text;
 using ExitGames.Client.Photon;
@@ -8,7 +7,8 @@ namespace ShrinkCart
 {
     internal static class HostConfigSync
     {
-        private const string ConfigKey = "ShrinkCart.HostConfig.v1";
+        private const string ConfigKey = "ShrinkCart.HostConfig.v2";
+        private const string PayloadVersion = "SC027";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 13;
 
@@ -19,14 +19,18 @@ namespace ShrinkCart
             internal bool ShrinkNonValuableItems;
             internal bool ShrinkShopPlayerItems;
             internal bool EnemyInCartInstantKill;
+            internal bool PreserveCartMass;
+            internal bool SuppressValuableDamageRestore;
             internal float CartLeaveDebounceSeconds;
             internal float ReshrinkCooldownSeconds;
+            internal float ScaleSpeed;
+            internal float RestoreScaleSpeed;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
 
         private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
-        private static readonly StringBuilder Builder = new StringBuilder(512);
+        private static readonly StringBuilder Builder = new StringBuilder(640);
 
         private static Snapshot _remoteSnapshot;
         private static string _lastPublishedPayload;
@@ -65,78 +69,6 @@ namespace ShrinkCart
             {
                 ReadRemoteSnapshot();
             }
-        }
-
-        internal static bool EffectiveHideScaleFlash()
-        {
-            if (UsesLocalConfig())
-            {
-                return ModConfig.HideScaleFlash.Value;
-            }
-
-            return _remoteSnapshot != null ? _remoteSnapshot.HideScaleFlash : ModConfig.HideScaleFlash.Value;
-        }
-
-        internal static bool ShouldMarkCategoryForVisual(ShrinkCategory category)
-        {
-            if (UsesLocalConfig())
-            {
-                float ignored;
-                return ModConfig.CartShrinkingEnabled.Value && ModConfig.TryGetScaleFactor(category, out ignored);
-            }
-
-            if (_remoteSnapshot == null)
-            {
-                return true;
-            }
-
-            if (!_remoteSnapshot.CartEnabled)
-            {
-                return false;
-            }
-
-            int index = (int)category;
-            if (index < 0 || index >= CategoryCount)
-            {
-                return true;
-            }
-
-            return _remoteSnapshot.Enabled[index];
-        }
-
-        internal static bool ShouldMarkShopPlayerItemForVisual()
-        {
-            if (UsesLocalConfig())
-            {
-                return ModConfig.CartShrinkingEnabled.Value && ModConfig.ShrinkShopPlayerItems.Value;
-            }
-
-            if (_remoteSnapshot == null)
-            {
-                return true;
-            }
-
-            return _remoteSnapshot.CartEnabled && _remoteSnapshot.ShrinkShopPlayerItems;
-        }
-
-        internal static bool ShouldMarkNonValuableItemForVisual()
-        {
-            if (UsesLocalConfig())
-            {
-                return ModConfig.CartShrinkingEnabled.Value && ModConfig.ShrinkNonValuableItems.Value;
-            }
-
-            if (_remoteSnapshot == null)
-            {
-                return true;
-            }
-
-            return _remoteSnapshot.CartEnabled && _remoteSnapshot.ShrinkNonValuableItems;
-        }
-
-        private static bool UsesLocalConfig()
-        {
-            return !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
         }
 
         private static void PublishIfChanged()
@@ -182,14 +114,18 @@ namespace ShrinkCart
         private static string BuildLocalPayload()
         {
             Builder.Length = 0;
-            Builder.Append("SC025");
+            Builder.Append(PayloadVersion);
             Append(ModConfig.CartShrinkingEnabled.Value);
             Append(ModConfig.HideScaleFlash.Value);
             Append(ModConfig.ShrinkNonValuableItems.Value);
             Append(ModConfig.ShrinkShopPlayerItems.Value);
             Append(ModConfig.EnemyInCartInstantKill.Value);
+            Append(ModConfig.PreserveCartMass.Value);
+            Append(ModConfig.SuppressValuableDamageRestore.Value);
             Append(ModConfig.SafeCartLeaveDebounceSeconds());
             Append(ModConfig.SafeReshrinkCooldownSeconds());
+            Append(ModConfig.SafeScaleSpeed());
+            Append(ModConfig.SafeRestoreScaleSpeed());
 
             for (int i = 0; i < CategoryCount; i++)
             {
@@ -207,8 +143,8 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 8 + CategoryCount * 2;
-            if (parts.Length != expected || parts[0] != "SC025")
+            int expected = 12 + CategoryCount * 2;
+            if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
             }
@@ -220,8 +156,12 @@ namespace ShrinkCart
                 !TryParseBool(parts[index++], out parsed.ShrinkNonValuableItems) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkShopPlayerItems) ||
                 !TryParseBool(parts[index++], out parsed.EnemyInCartInstantKill) ||
+                !TryParseBool(parts[index++], out parsed.PreserveCartMass) ||
+                !TryParseBool(parts[index++], out parsed.SuppressValuableDamageRestore) ||
                 !TryParseFloat(parts[index++], out parsed.CartLeaveDebounceSeconds) ||
-                !TryParseFloat(parts[index++], out parsed.ReshrinkCooldownSeconds))
+                !TryParseFloat(parts[index++], out parsed.ReshrinkCooldownSeconds) ||
+                !TryParseFloat(parts[index++], out parsed.ScaleSpeed) ||
+                !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed))
             {
                 return false;
             }
@@ -235,6 +175,7 @@ namespace ShrinkCart
                 }
             }
 
+            _remoteSnapshot = parsed;
             snapshot = parsed;
             return true;
         }
