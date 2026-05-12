@@ -1,117 +1,115 @@
-# RepoCoyoteStim v0.5.8
+# ShrinkCart v0.2.4
 
-适用于在 R.E.P.O. 游戏中连接 DG-LAB 郊狼 3.0 主机的 Socket 模组，支持受击、死亡惩罚、左右脚步、奔跑、跳跃、落地、滑行等事件触发连续波形和强度变化。
+适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
 作者 / Author: **AngelcoMilk**  
-GitHub: https://github.com/AngelcoMilk/RepoCoyoteStim
+GitHub: https://github.com/AngelcoMilk/ShrinkCart
 
-RepoCoyoteStim 会在游戏内启动一个 DG-LAB App Socket 控制端，让手机 DG-LAB 3.0 App 扫码连接，再由手机通过蓝牙连接郊狼 3.0 主机。电脑不需要蓝牙。
+ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车一段时间后会恢复原尺寸。缩放底层由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光、商店/人物用品过滤，以及可选敌人进车秒杀。
 
-```text
-R.E.P.O. Mod -> WebSocket -> 手机 DG-LAB 3.0 App -> 手机蓝牙 -> 郊狼 3.0 主机
-```
+## 依赖
 
-## 重要软件版本
+- `BepInEx-BepInExPack-5.4.2305`
+- `Vippy-ScalerCore-0.5.2`
+- `nickklmao-REPOConfig-1.2.6`
 
-- 请使用 Google Play 下载的 `DG-LAB 3.0+` App，建议使用 3.x 系列。
-- `DG-LAB 4.0` 及以上版本目前不兼容本 Mod 使用的 Socket 接入方式。
-- 手机负责蓝牙连接郊狼 3.0 主机；电脑只需要和手机网络互通。
+Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确保这些依赖和 ShrinkCart 安装在同一个 R.E.P.O. 配置文件中。
+
+## 推荐安装方式
+
+推荐房间里所有玩家都安装 ShrinkCart 和上述依赖。主机负责决定缩放倍率、商店/人物用品是否参与缩放、离车恢复时机和敌人进车秒杀；所有人都安装时，缩放显示、隐藏闪光和配置体验最一致。
+
+如果只有主机安装 ShrinkCart，缩放触发仍以主机为准，但客户端至少需要 ScalerCore 才能可靠看到缩放效果。如果客户端没有安装 ShrinkCart，可能仍会看到 ScalerCore 默认的冲击闪光。
 
 ## 主要功能
 
-- **受击惩罚**：本地玩家受到伤害时触发 A/B 通道惩罚波形，强度可按伤害变化。
-- **死亡惩罚**：本地玩家死亡时可先清空旧队列，再输出更长的死亡波形。
-- **连续波形**：走路、奔跑、滑行可进入持续状态，不只是单次点按。
-- **左右脚通道**：优先使用游戏动画里的 `LeftFootDown / RightFootDown`，默认左脚 A、右脚 B。
-- **动作事件**：支持跳跃、落地、滑行、敌人近距离脚步提示等事件。
-- **游戏内面板**：显示二维码、绑定状态、A/B 强度、当前队列、事件计数和诊断信息。
-- **波形预设**：内置舒适、标准、强惩罚、调试同步等预设。
-- **导入/导出**：支持从 `BepInEx/config/RepoCoyoteStim/profiles/` 导入/导出波形配置。
-
-## 连接方法
-
-1. 在 r2modman/Thunderstore 导入 Mod 包并启动 R.E.P.O.
-2. 进入游戏后按 `P` 打开“郊狼 3.0 控制面板”。
-3. 打开手机 `DG-LAB 3.0+` App，进入 `SOCKET` 功能。
-4. 扫描游戏面板中的二维码，不要使用普通扫码入口。
-5. App 绑定成功后，在面板中确认 A/B 当前强度，并启用触发。
-6. 任意时候按 `I` 可紧急停止，清空 A/B 队列并把强度设为 0。
-
-## 多 IP 地址说明
-
-面板会自动检测电脑上的 IPv4 地址，并显示多个“使用 xxx.xxx.xxx.xxx”按钮。多网卡、虚拟网卡、加速器、Tailscale、VMware、Hyper-V、WSL、Radmin 等环境下，电脑可能同时出现多个 IP。
-
-选择规则：
-
-1. 优先选择和手机处在同一个 Wi-Fi/局域网的 IPv4。
-2. 常见可用地址通常长这样：`192.168.x.x`、`10.x.x.x`、`172.16.x.x - 172.31.x.x`。
-3. 不要选 `127.0.0.1`，手机无法通过这个地址访问电脑。
-4. 如果扫码后 App 提示连接失败，回到面板换另一个 IPv4，保存并刷新二维码后重试。
-5. 确认 Windows 防火墙允许 R.E.P.O. 或当前端口通信。
-6. 如果手机和电脑连的是访客 Wi-Fi、校园网、公司网或开启 AP 隔离的网络，局域网连接可能不可用。
-
-默认本地端口为 `9999`。如果端口被占用，可以在面板或配置里修改端口，然后重启 Socket 服务并重新扫码。
-
-## 远程连接说明
-
-本 Mod 主线使用 DG-LAB 官方 App Socket 协议。DG-LAB App 原生“远程口令/远程码”不是公开 Socket v2 API，本 Mod 不把它作为稳定接入方式。
-
-可用的远程方式：
-
-- `PublicSocket`：二维码使用公网 `ws://` / `wss://` 地址。
-- `RemoteServer`：Mod 连接到公网 Socket v2 后端。
-- `RelayCode`：使用自建 relay code。注意这不是 DG-LAB App 原生远程口令，需要兼容的自建 relay 服务。
-
-## 快捷键
-
-- `P`：打开/关闭游戏内控制面板。
-- `I`：紧急停止，清空 A/B 队列并将强度设为 0。
-
-两个按键都可以在配置中修改。
+- **物品缩小搬运车**：把支持的物品放入购物车后自动缩小，拿出后恢复。
+- **物品/武器缩放可配置**：枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店/人物用品默认不缩小，但可以打开“商店/人物用品也缩小”让它们按 fallback 倍率缩小。
+- **特殊物品支持**：支持敌人球 Small/Medium/Big/Berserker、SurplusValuable、普通未知物品 fallback 倍率。
+- **贵重物分类倍率**：支持 Tiny、Small、Medium、Big、Wide、Tall、VeryTall 单独开关和倍率。
+- **永久排除项**：大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。
+- **R.E.P.O. 4.0 适配**：优先读取游戏新版本内置 `ValuableObject.volumeType` 来判断贵重物大小分类。
+- **主机同步**：多人游戏里以主机配置为准，缩放参数通过 ScalerCore 同步。
+- **边缘防抖**：物品在购物车边缘短暂离开时不会立刻放大，减少反复缩放抽搐。
+- **隐藏缩放闪光**：默认隐藏购物车缩小/恢复时的 ScalerCore 冲击闪光，不关闭普通碰撞特效。
+- **可选危险功能**：可开启敌人进车秒杀，也可开启车辆碾压秒杀玩家。
 
 ## 配置说明
 
-配置文件：
+配置界面由 REPOConfig 提供，主要配置项为中文：
 
-```text
-BepInEx/config/cn.codex.repo.coyotestim.cfg
-```
+- 购物车：启用购物车缩小、放入时缩小速度、取出后放大速度、离车防抖延迟、恢复后重新缩小冷却、保持原始重量、普通物品也缩小、商店/人物用品也缩小、防止碰撞弹回原尺寸。
+- 视觉：隐藏缩放闪光。
+- Tiny/Small/Medium/Big/Wide/Tall/VeryTall 分类：启用此分类缩小、缩小倍率。
+- 敌人球：启用敌人球缩小、Small/Medium/Big/Berserker 敌人球倍率。
+- 特殊物品：启用 Surplus 缩小、Surplus 倍率。
+- 普通或未知物品：默认缩小倍率。
+- 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-常用配置：
-
-- `Connection.Port`：本地 Socket 端口，默认 `9999`。
-- `Connection.AdvertiseHost`：二维码里展示给手机连接的电脑 IP/域名。
-- `Safety.Enabled`：是否启用游戏事件触发。
-- `Safety.AutoArmOnBind`：绑定 App 后是否自动启用触发。
-- `Safety.AutoStrengthMode`：自动调强模式。
-- `Safety.MaxWaveIntensity`：本 Mod 使用的波形强度上限。
-- `Hurt.*`：受击惩罚强度、持续时间、频率和通道倍率。
-- `Death.*`：死亡惩罚强度、持续时间、频率和是否清队列。
-- `Footstep.*`：左右脚通道、脚步强度、频率、最小间隔和兜底设置。
-- `Continuous.*`：连续波形补包间隔、lookahead 和淡出时间。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.4 默认值：缩小速度 `0.9`，放大速度 `0.55`，离车防抖延迟 `2.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`。
 
 ## 安装（r2modman）
 
-1. 导入 zip。
+1. 导入或安装 ShrinkCart 包。
 2. 确认 DLL 路径：
-   `BepInEx/plugins/RepoCoyoteStim/RepoCoyoteStim.dll`
-3. 确认依赖 `BepInExPack` 已安装。
+   `BepInEx/plugins/ShrinkCart/ShrinkCart.dll`
+3. 确认依赖已安装：BepInExPack、ScalerCore、REPOConfig。
 
 ## 已知限制
 
-- 只支持 DG-LAB 郊狼 3.0 的 App Socket 接入，不直接控制电脑蓝牙。
-- `DG-LAB 4.0` 及以上 App 当前不兼容此 Socket 方案。
-- 手机和电脑不在同一局域网时，局域网二维码不能直接使用，需要公网 Socket 或自建 relay。
-- 事件只在本地客户端触发，不修改游戏网络状态，也不强制同步给其他玩家。
-- 不建议在公开房间测试高强度或未调好的波形配置。
+- 缩放动画由 ScalerCore 控制，ShrinkCart 不重写底层缩放系统。
+- 如果 ScalerCore 因碰撞、安全恢复、对象禁用或同步保护选择瞬间恢复，ShrinkCart 不会强行绕过它。
+- 隐藏闪光只屏蔽 ShrinkCart 购物车缩放流程里的 ScalerCore 冲击特效。
+- 如果其他缩放类 mod 已经控制同一个物品，ShrinkCart 会尽量避免覆盖已经处于缩放状态的对象。
 
 ---
 
-# RepoCoyoteStim v0.5.8
+# ShrinkCart v0.2.4
 
-A R.E.P.O. DG-LAB Coyote 3.0 App Socket mod for in-game Coyote connection, hit/death punishment, footstep/action triggers, continuous waveforms, and configurable strength profiles.
+A shrink-hauler cart for R.E.P.O. 4.0.
 
 Author: **AngelcoMilk**  
-GitHub: https://github.com/AngelcoMilk/RepoCoyoteStim
+GitHub: https://github.com/AngelcoMilk/ShrinkCart
 
-Use the `DG-LAB 3.0+` Android app from Google Play, preferably the 3.x app line. `DG-LAB 4.0` and later are currently not compatible with this Socket workflow.
+ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart for easier hauling, then restores them after they truly leave the cart. ScalerCore handles the low-level scaling; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale flashes, shop/player item filtering, and optional enemy-in-cart instant kill.
+
+## Dependencies
+
+- `BepInEx-BepInExPack-5.4.2305`
+- `Vippy-ScalerCore-0.5.2`
+- `nickklmao-REPOConfig-1.2.6`
+
+## Recommended Multiplayer Setup
+
+All players in the room should install ShrinkCart and its dependencies. The host decides scale factors, shop/player item filtering, restore timing, and enemy-in-cart instant kill; installing it for everyone gives the most consistent visuals and config behavior.
+
+## Features
+
+- Shrinks supported items inside carts and restores them after removal.
+- Configurable item and weapon scaling: shop/player utility items such as guns, health packs, melee items, grenades, tools, drones, orbs, upgrades, trackers, and mines are excluded by default, but can be enabled and scaled with the fallback factor.
+- Supports special items such as enemy orbs, SurplusValuable, and fallback normal/unknown items.
+- Per-category factors for Tiny, Small, Medium, Big, Wide, Tall, and VeryTall valuables.
+- Small/big carts, C.A.R.T. Cannon, and C.A.R.T. Laser are always excluded.
+- Built for R.E.P.O. 4.0, using `ValuableObject.volumeType` for valuable size categories.
+- Host-authoritative scaling through ScalerCore multiplayer sync.
+- Cart-edge debounce to prevent rapid shrink/restore jitter.
+- Hidden cart-scale impact flash by default.
+- Optional enemy-in-cart instant kill and optional player vehicle-crush instant kill.
+
+## Configuration
+
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.4 defaults: shrink speed `0.9`, restore speed `0.55`, cart leave debounce `2.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`.
+
+## Installation (r2modman)
+
+1. Install or import the ShrinkCart package.
+2. Confirm DLL path:
+   `BepInEx/plugins/ShrinkCart/ShrinkCart.dll`
+3. Confirm dependencies are installed: BepInExPack, ScalerCore, REPOConfig.
+
+## Known Limits
+
+- Scaling animation is controlled by ScalerCore.
+- ShrinkCart does not override ScalerCore safety restores.
+- Hidden flash only applies to ShrinkCart cart scaling effects.
+- Other scaling mods may still control objects they already scaled.

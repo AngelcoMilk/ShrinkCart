@@ -1,10 +1,12 @@
 {
-  "name": "RepoCoyoteStim",
-  "version_number": "0.5.8",
-  "website_url": "https://github.com/AngelcoMilk/RepoCoyoteStim",
-  "description": "Connect DG-LAB Coyote 3.0 in R.E.P.O.; supports hit/death punishment, continuous waveforms, footstep/action triggers, and App Socket control panel.",
+  "name": "ShrinkCart",
+  "version_number": "0.2.4",
+  "website_url": "https://github.com/AngelcoMilk/ShrinkCart",
+  "description": "A R.E.P.O. 4.0 shrink-hauler cart with configurable item and weapon scaling, special item support, and host-authoritative sync.",
   "dependencies": [
-    "BepInEx-BepInExPack-5.4.2305"
+    "BepInEx-BepInExPack-5.4.2305",
+    "Vippy-ScalerCore-0.5.2",
+    "nickklmao-REPOConfig-1.2.6"
   ],
   "author": "AngelcoMilk"
 }
