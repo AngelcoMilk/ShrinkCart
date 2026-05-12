@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.6"
+$modVersion = "0.2.7"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -116,10 +116,8 @@ function Test-GameHookTargets {
     $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
     $targets = @(
         @{ Type = "PhysGrabInCart"; Method = "Add"; Parameters = @("PhysGrabObject") },
-        @{ Type = "PhysGrabObjectImpactDetector"; Method = "OnTriggerStay"; Parameters = @("UnityEngine.Collider") },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
         @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
-        @{ Type = "AssetManager"; Method = "PhysImpactEffect"; Parameters = @("UnityEngine.Vector3") },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
@@ -197,11 +195,21 @@ function Test-ScalerCoreHookTargets {
 
     $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
     $targets = @(
-        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchShrink"; Parameters = @("ScalerCore.ScaleOptions") },
-        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpand"; Parameters = @() },
-        @{ Type = "ScalerCore.ScaleController"; Method = "DispatchExpandNow"; Parameters = @() },
-        @{ Type = "ScalerCore.ScaleController"; Method = "RPC_Shrink"; Parameters = @("UnityEngine.Vector3", "System.Single[]", "System.Boolean[]") },
-        @{ Type = "ScalerCore.ScaleController"; Method = "RPC_Expand"; Parameters = @() }
+        @{ Type = "ScalerCore.ScaleManager"; Method = "ApplyIfNotScaled"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "Restore"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") }
+    )
+    $requiredFields = @(
+        @{ Type = "ScalerCore.ScaleController"; Field = "_options" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "Factor" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "Speed" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "RestoreSpeed" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "AllowedTargets" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressValueDropExpand" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "PreserveMass" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressImpactFlash" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressCameraShake" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
@@ -229,6 +237,19 @@ function Test-ScalerCoreHookTargets {
 
         if (!$hasCompatibleSignature) {
             $errors.Add("Incompatible signature: $($target.Type).$($target.Method)($($expectedParameters -join ', '))")
+        }
+    }
+
+    foreach ($requiredField in $requiredFields) {
+        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $requiredField.Type -or $_.FullName -eq $requiredField.Type } | Select-Object -First 1
+        if ($null -eq $type) {
+            $errors.Add("Missing field owner type: $($requiredField.Type)")
+            continue
+        }
+
+        $field = $type.Fields | Where-Object { $_.Name -eq $requiredField.Field } | Select-Object -First 1
+        if ($null -eq $field) {
+            $errors.Add("Missing field: $($requiredField.Type).$($requiredField.Field)")
         }
     }
 
