@@ -1,9 +1,9 @@
 {
   "name": "ShrinkCart",
-  "version_number": "0.2.8",
+  "version_number": "0.2.9",
   "website_url": "https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/",
   "author": "AngelcoMilk",
-  "description": "R.E.P.O. 4.0 shrink-hauler cart with configurable item and weapon scaling, host config sync, and quieter multiplayer cart scaling.",
+  "description": "R.E.P.O. 4.0 shrink-hauler cart with configurable item, weapon, and player cart scaling, host config sync, and ScalerCore 0.6.1 support.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305",
     "Vippy-ScalerCore-0.6.1",

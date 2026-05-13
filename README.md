@@ -1,4 +1,4 @@
-# ShrinkCart v0.2.8
+# ShrinkCart v0.2.9
 
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
@@ -75,7 +75,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.8 默认值已按本地测试配置调整：缩小速度 `0.6`，放大速度 `0.2`，离车防抖延迟 `0.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`，玩家进车缩放倍率 `0.4`，玩家进车切换间隔 `10` 秒。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.9 默认值已按本地测试配置调整：缩小速度 `0.6`，放大速度 `0.2`，离车防抖延迟 `0.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`，玩家进车缩放倍率 `0.4`，玩家进车切换间隔 `10` 秒。
 
 玩家机制说明：玩家缩放只在“商店/人物用品也缩小”开启时生效。第一次跳入购物车会缩小，跳出车外仍保持缩小；成功缩小后必须离开购物车并等待 10 秒，再次跳入购物车才会恢复原尺寸。恢复后同样需要离车等待 10 秒，下一次跳入才会再次缩小。
 
@@ -95,7 +95,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 
 ---
 
-# ShrinkCart v0.2.8
+# ShrinkCart v0.2.9
 
 A shrink-hauler cart for R.E.P.O. 4.0.
 
@@ -160,7 +160,7 @@ Special items from newer R.E.P.O. versions are also supported through the game's
 
 ## Configuration
 
-Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.8 defaults now match the local test config: shrink speed `0.6`, restore speed `0.2`, cart leave debounce `0.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`, player cart scale factor `0.4`, player cart toggle interval `10` seconds.
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.9 defaults now match the local test config: shrink speed `0.6`, restore speed `0.2`, cart leave debounce `0.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`, player cart scale factor `0.4`, player cart toggle interval `10` seconds.
 
 Player mechanism: player scaling only works when "Shrink shop/player items" is enabled. The first cart entry shrinks the player, leaving the cart keeps the player small, and entering again after leaving the cart for the configured interval restores the original size. The same interval applies after restore before the next shrink can trigger.
 
