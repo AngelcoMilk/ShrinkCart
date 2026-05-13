@@ -25,6 +25,7 @@ namespace ShrinkCart
 
             ModConfig.Bind(Config);
             ShrinkerCartController.Reset();
+            PlayerCartScaleController.Reset();
             EnemyInCartKillController.Reset();
             HostConfigSync.Reset();
 
@@ -38,11 +39,13 @@ namespace ShrinkCart
         {
             HostConfigSync.Tick();
             ShrinkerCartController.Tick();
+            PlayerCartScaleController.Tick();
         }
 
         private void OnDestroy()
         {
             ShrinkerCartController.RestoreAll();
+            PlayerCartScaleController.RestoreAll();
             VehicleCrushController.RestoreAll();
             HostConfigSync.Reset();
 

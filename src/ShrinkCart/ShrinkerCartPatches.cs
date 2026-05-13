@@ -11,6 +11,15 @@ namespace ShrinkCart
         }
     }
 
+    [HarmonyPatch(typeof(PhysGrabCart), "Start")]
+    internal static class PhysGrabCartStartPatch
+    {
+        private static void Postfix(PhysGrabCart __instance)
+        {
+            PlayerCartScaleController.RegisterCart(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(HurtCollider), "PlayerHurt")]
     internal static class HurtColliderPlayerHurtPatch
     {
@@ -31,6 +40,8 @@ namespace ShrinkCart
         private static void Prefix()
         {
             ShrinkerCartController.RestoreAll();
+            PlayerCartScaleController.RestoreAll();
+            PlayerCartScaleController.Reset();
             VehicleCrushController.RestoreAll();
             EnemyInCartKillController.Reset();
             HostConfigSync.Reset();

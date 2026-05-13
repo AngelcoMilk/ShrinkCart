@@ -8,7 +8,7 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC027";
+        private const string PayloadVersion = "SC028";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 13;
 
@@ -25,6 +25,8 @@ namespace ShrinkCart
             internal float ReshrinkCooldownSeconds;
             internal float ScaleSpeed;
             internal float RestoreScaleSpeed;
+            internal float PlayerCartScaleFactor;
+            internal float PlayerCartToggleCooldownSeconds;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
@@ -126,6 +128,8 @@ namespace ShrinkCart
             Append(ModConfig.SafeReshrinkCooldownSeconds());
             Append(ModConfig.SafeScaleSpeed());
             Append(ModConfig.SafeRestoreScaleSpeed());
+            Append(ModConfig.SafePlayerCartScaleFactor());
+            Append(ModConfig.SafePlayerCartToggleCooldownSeconds());
 
             for (int i = 0; i < CategoryCount; i++)
             {
@@ -143,7 +147,7 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 12 + CategoryCount * 2;
+            int expected = 14 + CategoryCount * 2;
             if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
@@ -161,7 +165,9 @@ namespace ShrinkCart
                 !TryParseFloat(parts[index++], out parsed.CartLeaveDebounceSeconds) ||
                 !TryParseFloat(parts[index++], out parsed.ReshrinkCooldownSeconds) ||
                 !TryParseFloat(parts[index++], out parsed.ScaleSpeed) ||
-                !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed))
+                !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed) ||
+                !TryParseFloat(parts[index++], out parsed.PlayerCartScaleFactor) ||
+                !TryParseFloat(parts[index++], out parsed.PlayerCartToggleCooldownSeconds))
             {
                 return false;
             }

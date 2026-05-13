@@ -31,6 +31,8 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkNonValuableItems;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
+        internal static ConfigEntry<float> PlayerCartScaleFactor;
+        internal static ConfigEntry<float> PlayerCartToggleCooldownSeconds;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -113,7 +115,19 @@ namespace ShrinkCart
                 "购物车",
                 "商店/人物用品也缩小",
                 false,
-                "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品也会使用默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
+                "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品会使用默认缩小倍率；玩家跳入购物车会切换缩小/恢复状态。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
+
+            PlayerCartScaleFactor = config.Bind(
+                "购物车",
+                "玩家进车缩放倍率",
+                0.4f,
+                Ranged("开启“商店/人物用品也缩小”后，玩家跳入购物车时的目标尺寸比例。", 0.05f, 1.0f));
+
+            PlayerCartToggleCooldownSeconds = config.Bind(
+                "购物车",
+                "玩家进车切换间隔",
+                10.0f,
+                Ranged("玩家成功缩小或恢复后，必须离开购物车并等待多少秒，再次跳入才会触发下一次切换。", 0.5f, 60.0f));
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -216,6 +230,8 @@ namespace ShrinkCart
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkNonValuableItems);
             WatchScaling(ShrinkShopPlayerItems);
+            WatchScaling(PlayerCartScaleFactor);
+            WatchScaling(PlayerCartToggleCooldownSeconds);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);
@@ -260,6 +276,16 @@ namespace ShrinkCart
         internal static float SafeReshrinkCooldownSeconds()
         {
             return Mathf.Clamp(ReshrinkCooldownSeconds.Value, 0.05f, 10.0f);
+        }
+
+        internal static float SafePlayerCartScaleFactor()
+        {
+            return Mathf.Clamp(PlayerCartScaleFactor.Value, 0.05f, 1.0f);
+        }
+
+        internal static float SafePlayerCartToggleCooldownSeconds()
+        {
+            return Mathf.Clamp(PlayerCartToggleCooldownSeconds.Value, 0.5f, 60.0f);
         }
 
         internal static bool TryGetScaleFactor(ShrinkCategory category, out float factor)

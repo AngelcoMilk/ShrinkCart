@@ -6,7 +6,7 @@
   "description": "R.E.P.O. 4.0 shrink-hauler cart with configurable item and weapon scaling, host config sync, and quieter multiplayer cart scaling.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305",
-    "Vippy-ScalerCore-0.6.0",
+    "Vippy-ScalerCore-0.6.1",
     "nickklmao-REPOConfig-1.2.6"
   ]
 }

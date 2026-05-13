@@ -41,9 +41,6 @@ namespace ShrinkCart
         private static readonly List<int> ExpiredCooldownIds = new List<int>(16);
         private static readonly List<GameObject> RestoreTargets = new List<GameObject>(16);
 
-        private static readonly FieldInfo ScaleOptionsField =
-            typeof(ScaleController).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic);
-
         private static readonly FieldInfo ItemAttributesItemTypeField =
             typeof(ItemAttributes).GetField("itemType", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
@@ -254,7 +251,7 @@ namespace ShrinkCart
                     return;
                 }
 
-                ApplyRestoreSpeed(target);
+                RefreshRestoreOptions(target);
                 ScaleManager.Restore(target);
                 DebugLog("Restored " + target.name + " speed=" + ModConfig.SafeRestoreScaleSpeed().ToString("0.###"));
             }
@@ -264,30 +261,19 @@ namespace ShrinkCart
             }
         }
 
-        private static void ApplyRestoreSpeed(GameObject target)
+        private static void RefreshRestoreOptions(GameObject target)
         {
-            if (ScaleOptionsField == null)
-            {
-                return;
-            }
-
             ScaleController controller = ScaleManager.GetController(target);
-            if (controller == null)
+            if (controller == null || !controller.IsScaled)
             {
                 return;
             }
 
-            object boxedOptions = ScaleOptionsField.GetValue(controller);
-            if (!(boxedOptions is ScaleOptions))
-            {
-                return;
-            }
-
-            ScaleOptions options = (ScaleOptions)boxedOptions;
+            ScaleOptions options = controller.CurrentOptions;
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
             options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
             options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
-            ScaleOptionsField.SetValue(controller, options);
+            ScaleManager.UpdateOptions(target, options);
         }
 
         private static bool TryGetShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)

@@ -197,11 +197,14 @@ function Test-ScalerCoreHookTargets {
     $targets = @(
         @{ Type = "ScalerCore.ScaleManager"; Method = "ApplyIfNotScaled"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "Restore"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "ForceRestore"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "UpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "ForceUpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") }
+        @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleController"; Method = "get_CurrentOptions"; Parameters = @() }
     )
     $requiredFields = @(
-        @{ Type = "ScalerCore.ScaleController"; Field = "_options" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "Factor" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "Speed" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "RestoreSpeed" },
@@ -209,7 +212,10 @@ function Test-ScalerCoreHookTargets {
         @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressValueDropExpand" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "PreserveMass" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressImpactFlash" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressCameraShake" }
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressCameraShake" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "IgnoreBonkExpand" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "RejectExternalApply" },
+        @{ Type = "ScalerCore.ScaleTargets"; Field = "Players" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
