@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.10"
+$modVersion = "0.2.11"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -129,7 +129,13 @@ function Test-GameHookTargets {
         @{ Type = "Enemy"; Field = "Health" },
         @{ Type = "EnemyHealth"; Field = "healthCurrent" },
         @{ Type = "ItemAttributes"; Field = "itemType" },
-        @{ Type = "PhysGrabObject"; Field = "isGun" }
+        @{ Type = "PhysGrabObject"; Field = "isGun" },
+        @{ Type = "PhysGrabCart"; Field = "isSmallCart" },
+        @{ Type = "PhysGrabCart"; Field = "physGrabObject" },
+        @{ Type = "PhysGrabCart"; Field = "inCart" },
+        @{ Type = "PlayerAvatar"; Field = "physObjectStander" },
+        @{ Type = "PlayerAvatar"; Field = "collider" },
+        @{ Type = "PlayerPhysObjectStander"; Field = "physGrabObjects" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]

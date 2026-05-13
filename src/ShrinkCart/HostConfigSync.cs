@@ -8,7 +8,7 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC0210";
+        private const string PayloadVersion = "SC0211";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 13;
 

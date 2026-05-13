@@ -28,6 +28,7 @@ namespace ShrinkCart
         {
             internal PhysGrabCart Cart;
             internal Transform InCart;
+            internal PhysGrabObject CartObject;
         }
 
         private static readonly Dictionary<int, CartState> RegisteredCarts =
@@ -47,8 +48,11 @@ namespace ShrinkCart
         private static readonly FieldInfo PhysGrabCartPhysGrabObjectField =
             typeof(PhysGrabCart).GetField("physGrabObject", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        private static readonly FieldInfo ItemAttributesItemTypeField =
-            typeof(ItemAttributes).GetField("itemType", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private static readonly FieldInfo PlayerPhysObjectStanderObjectsField =
+            typeof(PlayerPhysObjectStander).GetField("physGrabObjects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        private static readonly FieldInfo PlayerAvatarColliderField =
+            typeof(PlayerAvatar).GetField("collider", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         private static float _nextTickTime;
 
@@ -77,8 +81,11 @@ namespace ShrinkCart
             RegisteredCarts[cart.GetInstanceID()] = new CartState
             {
                 Cart = cart,
-                InCart = GetInCartTransform(cart)
+                InCart = GetInCartTransform(cart),
+                CartObject = GetCartPhysGrabObject(cart)
             };
+
+            DebugLog("Registered regular cart for player stand-toggle: " + cart.name);
         }
 
         internal static void Tick()
@@ -170,6 +177,11 @@ namespace ShrinkCart
             bool inTriggerZone = IsPlayerStandingInAnyCart(player);
             if (!inTriggerZone)
             {
+                if (state.WasInTriggerZone)
+                {
+                    DebugLog("Player left cart center stand zone: " + player.name);
+                }
+
                 state.WasInTriggerZone = false;
                 state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = 0.0f;
@@ -181,6 +193,7 @@ namespace ShrinkCart
                 state.WasInTriggerZone = true;
                 state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = now;
+                DebugLog("Player entered cart center stand zone: " + player.name);
                 return;
             }
 
@@ -191,6 +204,7 @@ namespace ShrinkCart
             }
 
             state.TriggeredThisStay = true;
+            DebugLog("Player cart center stand timer completed: " + player.name);
 
             if (state.ShrinkCartScaled)
             {
@@ -236,11 +250,17 @@ namespace ShrinkCart
 
             try
             {
-                return ScaleManager.ApplyIfNotScaled(target, options);
+                bool applied = ScaleManager.ApplyIfNotScaled(target, options);
+                if (!applied)
+                {
+                    DebugLog("ScalerCore rejected player cart shrink: " + target.name);
+                }
+
+                return applied;
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogWarning("Failed to shrink player entering cart: " + ex.Message);
+                Plugin.Log.LogWarning("Failed to shrink player standing in cart: " + ex.Message);
                 return false;
             }
         }
@@ -301,19 +321,30 @@ namespace ShrinkCart
                 cartState.InCart = inCart;
             }
 
-            if (player == null || inCart == null)
+            PhysGrabObject cartObject = cartState.CartObject;
+            if (cartObject == null && cartState.Cart != null)
+            {
+                cartObject = GetCartPhysGrabObject(cartState.Cart);
+                cartState.CartObject = cartObject;
+            }
+
+            if (player == null || inCart == null || cartObject == null)
             {
                 return false;
             }
 
-            Vector3 position = player.playerTransform != null ? player.playerTransform.position : player.transform.position;
-            return IsPointInsideCartCenterZone(position + Vector3.up * StandPointYOffset, inCart);
+            if (!IsPlayerStandingOnCartObject(player, cartObject))
+            {
+                return false;
+            }
+
+            return IsPointInsideCartCenterZone(GetPlayerStandPoint(player), inCart);
         }
 
         private static bool IsPointInsideCartCenterZone(Vector3 point, Transform inCart)
         {
             Vector3 local = Quaternion.Inverse(inCart.rotation) * (point - inCart.position);
-            Vector3 half = inCart.localScale;
+            Vector3 half = inCart.lossyScale;
             float centerHalfX = Mathf.Max(Mathf.Abs(half.x) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
             float centerHalfZ = Mathf.Max(Mathf.Abs(half.z) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
             float halfY = Mathf.Abs(half.y);
@@ -369,30 +400,11 @@ namespace ShrinkCart
                 return true;
             }
 
-            PhysGrabObject cartObject = GetCartPhysGrabObject(cart);
-            ItemAttributes attributes = null;
-            if (cartObject != null)
+            if (cart.isSmallCart)
             {
-                attributes = cartObject.GetComponent<ItemAttributes>() ?? cartObject.GetComponentInParent<ItemAttributes>();
-            }
-
-            if (attributes == null)
-            {
-                attributes = cart.GetComponent<ItemAttributes>() ?? cart.GetComponentInParent<ItemAttributes>();
-            }
-
-            SemiFunc.itemType itemType;
-            if (attributes != null && TryGetItemType(attributes, out itemType))
-            {
-                bool isVehicleCart = cart.GetComponentInParent<ItemVehicle>() != null ||
-                                     (cartObject != null && cartObject.GetComponentInParent<ItemVehicle>() != null);
-
-                if (itemType == SemiFunc.itemType.pocket_cart ||
-                    (!isVehicleCart && itemType == SemiFunc.itemType.cart))
-                {
-                    ExcludedCartIds.Add(id);
-                    return true;
-                }
+                ExcludedCartIds.Add(id);
+                DebugLog("Excluded small cart from player stand-toggle: " + cart.name);
+                return true;
             }
 
             return false;
@@ -408,22 +420,50 @@ namespace ShrinkCart
             return PhysGrabCartPhysGrabObjectField.GetValue(cart) as PhysGrabObject;
         }
 
-        private static bool TryGetItemType(ItemAttributes attributes, out SemiFunc.itemType itemType)
+        private static bool IsPlayerStandingOnCartObject(PlayerAvatar player, PhysGrabObject cartObject)
         {
-            itemType = default(SemiFunc.itemType);
-            if (attributes == null || ItemAttributesItemTypeField == null)
+            if (player == null ||
+                player.physObjectStander == null ||
+                cartObject == null ||
+                PlayerPhysObjectStanderObjectsField == null)
             {
                 return false;
             }
 
-            object value = ItemAttributesItemTypeField.GetValue(attributes);
-            if (!(value is SemiFunc.itemType))
+            List<PhysGrabObject> standingObjects =
+                PlayerPhysObjectStanderObjectsField.GetValue(player.physObjectStander) as List<PhysGrabObject>;
+            if (standingObjects == null || standingObjects.Count == 0)
             {
                 return false;
             }
 
-            itemType = (SemiFunc.itemType)value;
-            return true;
+            for (int i = 0; i < standingObjects.Count; i++)
+            {
+                if (standingObjects[i] == cartObject)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Vector3 GetPlayerStandPoint(PlayerAvatar player)
+        {
+            Collider collider = null;
+            if (player != null && PlayerAvatarColliderField != null)
+            {
+                collider = PlayerAvatarColliderField.GetValue(player) as Collider;
+            }
+
+            if (collider != null)
+            {
+                Bounds bounds = collider.bounds;
+                return new Vector3(bounds.center.x, bounds.min.y + StandPointYOffset, bounds.center.z);
+            }
+
+            Vector3 position = player.playerTransform != null ? player.playerTransform.position : player.transform.position;
+            return position + Vector3.up * StandPointYOffset;
         }
 
         private static void PruneMissingPlayers()
