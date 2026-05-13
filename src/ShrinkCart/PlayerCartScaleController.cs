@@ -19,8 +19,14 @@ namespace ShrinkCart
             internal float NextAllowedToggleTime;
         }
 
-        private static readonly Dictionary<int, PhysGrabCart> RegisteredCarts =
-            new Dictionary<int, PhysGrabCart>();
+        private sealed class CartState
+        {
+            internal PhysGrabCart Cart;
+            internal Transform InCart;
+        }
+
+        private static readonly Dictionary<int, CartState> RegisteredCarts =
+            new Dictionary<int, CartState>();
 
         private static readonly Dictionary<int, PlayerState> PlayerStates =
             new Dictionary<int, PlayerState>();
@@ -49,7 +55,11 @@ namespace ShrinkCart
                 return;
             }
 
-            RegisteredCarts[cart.GetInstanceID()] = cart;
+            RegisteredCarts[cart.GetInstanceID()] = new CartState
+            {
+                Cart = cart,
+                InCart = GetInCartTransform(cart)
+            };
         }
 
         internal static void Tick()
@@ -238,9 +248,9 @@ namespace ShrinkCart
 
         private static bool IsPlayerInsideAnyCart(PlayerAvatar player)
         {
-            foreach (PhysGrabCart cart in RegisteredCarts.Values)
+            foreach (CartState cartState in RegisteredCarts.Values)
             {
-                if (cart != null && IsPlayerInsideCart(player, cart))
+                if (cartState != null && IsPlayerInsideCart(player, cartState))
                 {
                     return true;
                 }
@@ -249,9 +259,15 @@ namespace ShrinkCart
             return false;
         }
 
-        private static bool IsPlayerInsideCart(PlayerAvatar player, PhysGrabCart cart)
+        private static bool IsPlayerInsideCart(PlayerAvatar player, CartState cartState)
         {
-            Transform inCart = GetInCartTransform(cart);
+            Transform inCart = cartState.InCart;
+            if (inCart == null && cartState.Cart != null)
+            {
+                inCart = GetInCartTransform(cartState.Cart);
+                cartState.InCart = inCart;
+            }
+
             if (player == null || inCart == null)
             {
                 return false;
@@ -286,9 +302,9 @@ namespace ShrinkCart
         private static void PruneInvalidCarts()
         {
             RemoveCartIds.Clear();
-            foreach (KeyValuePair<int, PhysGrabCart> pair in RegisteredCarts)
+            foreach (KeyValuePair<int, CartState> pair in RegisteredCarts)
             {
-                if (pair.Value == null)
+                if (pair.Value == null || pair.Value.Cart == null || pair.Value.InCart == null)
                 {
                     RemoveCartIds.Add(pair.Key);
                 }
