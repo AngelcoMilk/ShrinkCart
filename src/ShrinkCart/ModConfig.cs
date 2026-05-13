@@ -78,7 +78,7 @@ namespace ShrinkCart
             CartScaleSpeed = config.Bind(
                 "购物车",
                 "放入时缩小速度",
-                0.6f,
+                0.5f,
                 Ranged("ScalerCore 缩小动画速度。数值越大越快。", 0.1f, 20.0f));
 
             RestoreScaleSpeed = config.Bind(
@@ -120,13 +120,13 @@ namespace ShrinkCart
             PlayerCartScaleFactor = config.Bind(
                 "购物车",
                 "玩家进车缩放倍率",
-                0.4f,
+                0.55f,
                 Ranged("开启“商店/人物用品也缩小”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
 
             PlayerCartStandTriggerSeconds = config.Bind(
                 "购物车",
                 "玩家站车触发时间",
-                3.0f,
+                2.0f,
                 Ranged("开启“商店/人物用品也缩小”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
 
             SuppressValuableDamageRestore = config.Bind(
@@ -142,17 +142,17 @@ namespace ShrinkCart
                 "启用后，隐藏 ShrinkCart 购物车缩小和恢复时由 ScalerCore 触发的冲击闪光。不会关闭普通碰撞特效。");
 
             TinyEnabled = BindCategoryEnabled(config, "Tiny 微型贵重物", true);
-            TinyScaleFactor = BindCategoryFactor(config, "Tiny 微型贵重物", 0.55f);
+            TinyScaleFactor = BindCategoryFactor(config, "Tiny 微型贵重物", 0.8f);
             SmallEnabled = BindCategoryEnabled(config, "Small 小贵重物", true);
-            SmallScaleFactor = BindCategoryFactor(config, "Small 小贵重物", 0.45f);
+            SmallScaleFactor = BindCategoryFactor(config, "Small 小贵重物", 0.6f);
             MediumEnabled = BindCategoryEnabled(config, "Medium 中贵重物", true);
-            MediumScaleFactor = BindCategoryFactor(config, "Medium 中贵重物", 0.4f);
+            MediumScaleFactor = BindCategoryFactor(config, "Medium 中贵重物", 0.45f);
             BigEnabled = BindCategoryEnabled(config, "Big 大贵重物", true);
-            BigScaleFactor = BindCategoryFactor(config, "Big 大贵重物", 0.25f);
+            BigScaleFactor = BindCategoryFactor(config, "Big 大贵重物", 0.4f);
             WideEnabled = BindCategoryEnabled(config, "Wide 宽贵重物", true);
-            WideScaleFactor = BindCategoryFactor(config, "Wide 宽贵重物", 0.25f);
+            WideScaleFactor = BindCategoryFactor(config, "Wide 宽贵重物", 0.35f);
             TallEnabled = BindCategoryEnabled(config, "Tall 高贵重物", true);
-            TallScaleFactor = BindCategoryFactor(config, "Tall 高贵重物", 0.25f);
+            TallScaleFactor = BindCategoryFactor(config, "Tall 高贵重物", 0.35f);
             VeryTallEnabled = BindCategoryEnabled(config, "VeryTall 超高贵重物", true);
             VeryTallScaleFactor = BindCategoryFactor(config, "VeryTall 超高贵重物", 0.25f);
 
@@ -165,13 +165,13 @@ namespace ShrinkCart
             EnemyOrbSmallScaleFactor = config.Bind(
                 "敌人球",
                 "Small 敌人球倍率",
-                0.6f,
+                0.8f,
                 Ranged("Small 敌人球放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             EnemyOrbMediumScaleFactor = config.Bind(
                 "敌人球",
                 "Medium 敌人球倍率",
-                0.55f,
+                0.65f,
                 Ranged("Medium 敌人球放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             EnemyOrbBigScaleFactor = config.Bind(
@@ -201,7 +201,7 @@ namespace ShrinkCart
             FallbackScaleFactor = config.Bind(
                 "普通或未知物品",
                 "默认缩小倍率",
-                0.4f,
+                0.5f,
                 Ranged("普通物品、未知分类物品，或开启商店用品缩放后的实用品放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             VehicleCrushInstantKill = config.Bind(

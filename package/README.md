@@ -1,10 +1,10 @@
-# ShrinkCart v0.2.11
+# ShrinkCart v0.2.12
 
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
 作者 / Author: **AngelcoMilk**  
 Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
-GitHub 文档 / GitHub Docs: https://github.com/AngelcoMilk/ShrinkCart
+GitHub / Source: https://github.com/AngelcoMilk/ShrinkCart
 
 ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车一段时间后会恢复原尺寸。缩放底层由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、隐藏缩放闪光、商店/人物用品过滤、玩家站车计时切换缩放、主机配置同步，以及可选敌人进车秒杀。
 
@@ -14,7 +14,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 - `Vippy-ScalerCore-0.6.1`
 - `nickklmao-REPOConfig-1.2.6`
 
-Thunderstore/r2modman 安装时会自动拉取依赖。手动安装时，请确保这些依赖和 ShrinkCart 安装在同一个 R.E.P.O. 配置文件中。
+Thunderstore/r2modman 安装时会自动拉取依赖。mod 管理器的跳转按钮来自 manifest 的 website_url，因此会打开 Thunderstore 详情页；源码地址请看上方 GitHub 链接。手动安装时，请确保这些依赖和 ShrinkCart 安装在同一个 R.E.P.O. 配置文件中。
 
 ## 推荐安装方式
 
@@ -75,7 +75,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 - 普通或未知物品：默认缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.11 默认值已按本地测试配置调整：缩小速度 `0.6`，放大速度 `0.2`，离车防抖延迟 `0.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`，玩家进车缩放倍率 `0.4`，玩家站车触发时间 `3` 秒。
+倍率含义：`0.4` 表示目标尺寸为原尺寸的 40%。v0.2.12 默认值已按本地测试配置调整：缩小速度 `0.5`，放大速度 `0.2`，离车防抖延迟 `0.5`，恢复后重新缩小冷却 `0.5`，商店/人物用品缩放 `false`，玩家进车缩放倍率 `0.55`，玩家站车触发时间 `2` 秒。贵重物倍率：Tiny `0.8`，Small `0.6`，Medium `0.45`，Big `0.4`，Wide `0.35`，Tall `0.35`，VeryTall `0.25`。敌人球倍率：Small `0.8`，Medium `0.65`，Big `0.45`，Berserker `0.45`。普通/未知物品 `0.5`，Surplus `0.25`。
 
 玩家机制说明：玩家缩放只在“商店/人物用品也缩小”开启时生效。玩家必须实际站在正式购物车上，并且脚下处于中心区域满 3 秒才会触发切换；第一次触发会缩小，离开车外仍保持缩小，再次站到中心区域满 3 秒会恢复原尺寸。离开中心区域会重置计时；触发后如果一直站在车上不会连续反复切换，必须离开中心区域后重新站入才会开始下一次计时。小推车/口袋推车不会触发玩家站车缩放；靠近车边、擦到车壁或站在边缘区域也不会触发。
 
@@ -95,13 +95,13 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小，ShrinkCart 会
 
 ---
 
-# ShrinkCart v0.2.11
+# ShrinkCart v0.2.12
 
 A shrink-hauler cart for R.E.P.O. 4.0.
 
 Author: **AngelcoMilk**  
 Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
-GitHub Docs: https://github.com/AngelcoMilk/ShrinkCart
+GitHub / Source: https://github.com/AngelcoMilk/ShrinkCart
 
 ShrinkCart automatically shrinks supported items placed inside a C.A.R.T / cart for easier hauling, then restores them after they truly leave the cart. ScalerCore handles the low-level scaling; ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, hidden cart-scale flashes and impact sounds, shop/player item filtering, timed player stand-toggle shrinking, host config sync, and optional enemy-in-cart instant kill.
 
@@ -160,7 +160,7 @@ Special items from newer R.E.P.O. versions are also supported through the game's
 
 ## Configuration
 
-Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.11 defaults now match the local test config: shrink speed `0.6`, restore speed `0.2`, cart leave debounce `0.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`, player cart scale factor `0.4`, player cart stand trigger time `3` seconds.
+Configuration is provided through REPOConfig. Scale factors are direct size multipliers: `0.4` means 40% of the original size. v0.2.12 defaults now match the local test config: shrink speed `0.5`, restore speed `0.2`, cart leave debounce `0.5`, post-restore reshrink cooldown `0.5`, shop/player item scaling `false`, player cart scale factor `0.55`, player cart stand trigger time `2` seconds. Valuable defaults: Tiny `0.8`, Small `0.6`, Medium `0.45`, Big `0.4`, Wide `0.35`, Tall `0.35`, VeryTall `0.25`. Enemy orb defaults: Small `0.8`, Medium `0.65`, Big `0.45`, Berserker `0.45`. Fallback `0.5`, Surplus `0.25`.
 
 Player mechanism: player scaling only works when "Shrink shop/player items" is enabled. The player must actually stand on a regular cart and keep their feet in the center zone for 3 seconds to toggle the state. The first trigger shrinks the player, leaving the cart keeps the player small, and standing in the center zone again for 3 seconds restores the original size. Staying in the zone will not repeatedly toggle; leave and re-enter the center zone to start the next timer. Small/pocket carts do not trigger player stand-toggle scaling, and brushing the cart wall or standing on the edge zone will not trigger it.
 
