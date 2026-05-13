@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.9"
+$modVersion = "0.2.10"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"

@@ -9,14 +9,19 @@ namespace ShrinkCart
     internal static class PlayerCartScaleController
     {
         private const float TickIntervalSeconds = 0.1f;
-        private const float BoundsPadding = 0.05f;
+        private const float CenterZoneHorizontalScale = 0.45f;
+        private const float CenterZoneVerticalPaddingBelow = 0.6f;
+        private const float CenterZoneVerticalPaddingAbove = 0.8f;
+        private const float MinimumCenterHalfExtent = 0.15f;
+        private const float StandPointYOffset = 0.05f;
 
         private sealed class PlayerState
         {
             internal PlayerAvatar Player;
             internal bool ShrinkCartScaled;
-            internal bool WasInsideCart;
-            internal float NextAllowedToggleTime;
+            internal bool WasInTriggerZone;
+            internal bool TriggeredThisStay;
+            internal float TriggerZoneEnteredTime;
         }
 
         private sealed class CartState
@@ -31,11 +36,19 @@ namespace ShrinkCart
         private static readonly Dictionary<int, PlayerState> PlayerStates =
             new Dictionary<int, PlayerState>();
 
+        private static readonly HashSet<int> ExcludedCartIds = new HashSet<int>();
+
         private static readonly List<int> RemoveCartIds = new List<int>(8);
         private static readonly List<int> RemovePlayerIds = new List<int>(8);
 
         private static readonly FieldInfo PhysGrabCartInCartField =
             typeof(PhysGrabCart).GetField("inCart", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        private static readonly FieldInfo PhysGrabCartPhysGrabObjectField =
+            typeof(PhysGrabCart).GetField("physGrabObject", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        private static readonly FieldInfo ItemAttributesItemTypeField =
+            typeof(ItemAttributes).GetField("itemType", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         private static float _nextTickTime;
 
@@ -43,6 +56,7 @@ namespace ShrinkCart
         {
             RegisteredCarts.Clear();
             PlayerStates.Clear();
+            ExcludedCartIds.Clear();
             RemoveCartIds.Clear();
             RemovePlayerIds.Clear();
             _nextTickTime = 0.0f;
@@ -51,6 +65,11 @@ namespace ShrinkCart
         internal static void RegisterCart(PhysGrabCart cart)
         {
             if (cart == null)
+            {
+                return;
+            }
+
+            if (IsExcludedPlayerScaleCart(cart))
             {
                 return;
             }
@@ -148,22 +167,37 @@ namespace ShrinkCart
                 state.ShrinkCartScaled = false;
             }
 
-            bool insideCart = IsPlayerInsideAnyCart(player);
-            bool enteredCart = insideCart && !state.WasInsideCart;
-            state.WasInsideCart = insideCart;
+            bool inTriggerZone = IsPlayerStandingInAnyCart(player);
+            if (!inTriggerZone)
+            {
+                state.WasInTriggerZone = false;
+                state.TriggeredThisStay = false;
+                state.TriggerZoneEnteredTime = 0.0f;
+                return;
+            }
 
-            if (!enteredCart || now < state.NextAllowedToggleTime)
+            if (!state.WasInTriggerZone)
+            {
+                state.WasInTriggerZone = true;
+                state.TriggeredThisStay = false;
+                state.TriggerZoneEnteredTime = now;
+                return;
+            }
+
+            if (state.TriggeredThisStay ||
+                now - state.TriggerZoneEnteredTime < ModConfig.SafePlayerCartStandTriggerSeconds())
             {
                 return;
             }
+
+            state.TriggeredThisStay = true;
 
             if (state.ShrinkCartScaled)
             {
                 if (RestorePlayer(player.gameObject))
                 {
                     state.ShrinkCartScaled = false;
-                    state.NextAllowedToggleTime = now + ModConfig.SafePlayerCartToggleCooldownSeconds();
-                    DebugLog("Restored player from cart toggle: " + player.name);
+                    DebugLog("Restored player after standing in cart center: " + player.name);
                 }
 
                 return;
@@ -178,8 +212,7 @@ namespace ShrinkCart
             if (ShrinkPlayer(player.gameObject))
             {
                 state.ShrinkCartScaled = true;
-                state.NextAllowedToggleTime = now + ModConfig.SafePlayerCartToggleCooldownSeconds();
-                DebugLog("Shrunk player from cart toggle: " + player.name);
+                DebugLog("Shrunk player after standing in cart center: " + player.name);
             }
         }
 
@@ -246,11 +279,11 @@ namespace ShrinkCart
             }
         }
 
-        private static bool IsPlayerInsideAnyCart(PlayerAvatar player)
+        private static bool IsPlayerStandingInAnyCart(PlayerAvatar player)
         {
             foreach (CartState cartState in RegisteredCarts.Values)
             {
-                if (cartState != null && IsPlayerInsideCart(player, cartState))
+                if (cartState != null && IsPlayerStandingInCartCenter(player, cartState))
                 {
                     return true;
                 }
@@ -259,7 +292,7 @@ namespace ShrinkCart
             return false;
         }
 
-        private static bool IsPlayerInsideCart(PlayerAvatar player, CartState cartState)
+        private static bool IsPlayerStandingInCartCenter(PlayerAvatar player, CartState cartState)
         {
             Transform inCart = cartState.InCart;
             if (inCart == null && cartState.Cart != null)
@@ -274,19 +307,21 @@ namespace ShrinkCart
             }
 
             Vector3 position = player.playerTransform != null ? player.playerTransform.position : player.transform.position;
-            return IsPointInsideCartBounds(position, inCart) ||
-                   IsPointInsideCartBounds(position + Vector3.up * 0.4f, inCart) ||
-                   IsPointInsideCartBounds(position + Vector3.up * 0.9f, inCart);
+            return IsPointInsideCartCenterZone(position + Vector3.up * StandPointYOffset, inCart);
         }
 
-        private static bool IsPointInsideCartBounds(Vector3 point, Transform inCart)
+        private static bool IsPointInsideCartCenterZone(Vector3 point, Transform inCart)
         {
             Vector3 local = Quaternion.Inverse(inCart.rotation) * (point - inCart.position);
             Vector3 half = inCart.localScale;
+            float centerHalfX = Mathf.Max(Mathf.Abs(half.x) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
+            float centerHalfZ = Mathf.Max(Mathf.Abs(half.z) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
+            float halfY = Mathf.Abs(half.y);
 
-            return Mathf.Abs(local.x) <= Mathf.Abs(half.x) + BoundsPadding &&
-                   Mathf.Abs(local.y) <= Mathf.Abs(half.y) + BoundsPadding &&
-                   Mathf.Abs(local.z) <= Mathf.Abs(half.z) + BoundsPadding;
+            return Mathf.Abs(local.x) <= centerHalfX &&
+                   Mathf.Abs(local.z) <= centerHalfZ &&
+                   local.y >= -halfY - CenterZoneVerticalPaddingBelow &&
+                   local.y <= halfY + CenterZoneVerticalPaddingAbove;
         }
 
         private static Transform GetInCartTransform(PhysGrabCart cart)
@@ -304,7 +339,10 @@ namespace ShrinkCart
             RemoveCartIds.Clear();
             foreach (KeyValuePair<int, CartState> pair in RegisteredCarts)
             {
-                if (pair.Value == null || pair.Value.Cart == null || pair.Value.InCart == null)
+                if (pair.Value == null ||
+                    pair.Value.Cart == null ||
+                    pair.Value.InCart == null ||
+                    IsExcludedPlayerScaleCart(pair.Value.Cart))
                 {
                     RemoveCartIds.Add(pair.Key);
                 }
@@ -316,6 +354,76 @@ namespace ShrinkCart
             }
 
             RemoveCartIds.Clear();
+        }
+
+        private static bool IsExcludedPlayerScaleCart(PhysGrabCart cart)
+        {
+            if (cart == null)
+            {
+                return true;
+            }
+
+            int id = cart.GetInstanceID();
+            if (ExcludedCartIds.Contains(id))
+            {
+                return true;
+            }
+
+            PhysGrabObject cartObject = GetCartPhysGrabObject(cart);
+            ItemAttributes attributes = null;
+            if (cartObject != null)
+            {
+                attributes = cartObject.GetComponent<ItemAttributes>() ?? cartObject.GetComponentInParent<ItemAttributes>();
+            }
+
+            if (attributes == null)
+            {
+                attributes = cart.GetComponent<ItemAttributes>() ?? cart.GetComponentInParent<ItemAttributes>();
+            }
+
+            SemiFunc.itemType itemType;
+            if (attributes != null && TryGetItemType(attributes, out itemType))
+            {
+                bool isVehicleCart = cart.GetComponentInParent<ItemVehicle>() != null ||
+                                     (cartObject != null && cartObject.GetComponentInParent<ItemVehicle>() != null);
+
+                if (itemType == SemiFunc.itemType.pocket_cart ||
+                    (!isVehicleCart && itemType == SemiFunc.itemType.cart))
+                {
+                    ExcludedCartIds.Add(id);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static PhysGrabObject GetCartPhysGrabObject(PhysGrabCart cart)
+        {
+            if (cart == null || PhysGrabCartPhysGrabObjectField == null)
+            {
+                return null;
+            }
+
+            return PhysGrabCartPhysGrabObjectField.GetValue(cart) as PhysGrabObject;
+        }
+
+        private static bool TryGetItemType(ItemAttributes attributes, out SemiFunc.itemType itemType)
+        {
+            itemType = default(SemiFunc.itemType);
+            if (attributes == null || ItemAttributesItemTypeField == null)
+            {
+                return false;
+            }
+
+            object value = ItemAttributesItemTypeField.GetValue(attributes);
+            if (!(value is SemiFunc.itemType))
+            {
+                return false;
+            }
+
+            itemType = (SemiFunc.itemType)value;
+            return true;
         }
 
         private static void PruneMissingPlayers()
