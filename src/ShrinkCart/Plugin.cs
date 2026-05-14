@@ -11,7 +11,7 @@ namespace ShrinkCart
     {
         public const string PluginGuid = "AngelcoMilk.ShrinkCart";
         public const string PluginName = "ShrinkCart";
-        public const string PluginVersion = "0.2.12";
+        public const string PluginVersion = "0.2.16";
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
@@ -24,6 +24,7 @@ namespace ShrinkCart
             Log = Logger;
 
             ModConfig.Bind(Config);
+            ValuableBoxScaleAdapter.RegisterHandler();
             ShrinkerCartController.Reset();
             PlayerCartScaleController.Reset();
             EnemyInCartKillController.Reset();
@@ -40,12 +41,14 @@ namespace ShrinkCart
             HostConfigSync.Tick();
             ShrinkerCartController.Tick();
             PlayerCartScaleController.Tick();
+            CartCollisionGuard.Tick();
         }
 
         private void OnDestroy()
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
+            CartCollisionGuard.Reset();
             VehicleCrushController.RestoreAll();
             HostConfigSync.Reset();
 

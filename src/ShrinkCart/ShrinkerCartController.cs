@@ -200,11 +200,25 @@ namespace ShrinkCart
                 return;
             }
 
+            if (category == ShrinkCategory.ValuableBox)
+            {
+                if (!ValuableBoxScaleAdapter.EnsureController(target))
+                {
+                    DebugLog(
+                        "Prepared token/cosmetic box controller, waiting for ScalerCore initialization: " +
+                        target.name +
+                        " kind=" + ValuableBoxScaleAdapter.DescribeSpecialBox(item));
+                    return;
+                }
+            }
+
             ScaleOptions options = ScaleOptions.Default;
             options.Factor = factor;
             options.Speed = ModConfig.SafeScaleSpeed();
             options.Duration = 0.0f;
-            options.AllowedTargets = ScaleTargets.Valuables | ScaleTargets.Items;
+            options.AllowedTargets = category == ShrinkCategory.ValuableBox
+                ? ScaleTargets.All
+                : ScaleTargets.Valuables | ScaleTargets.Items;
             options.SuppressValueDropExpand = ModConfig.SuppressValuableDamageRestore.Value;
             options.PreserveMass = ModConfig.PreserveCartMass.Value;
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
@@ -215,6 +229,14 @@ namespace ShrinkCart
             {
                 if (!ScaleManager.ApplyIfNotScaled(target, options))
                 {
+                    if (category == ShrinkCategory.ValuableBox)
+                    {
+                        DebugLog(
+                            "ScalerCore rejected token/cosmetic box shrink for " + target.name +
+                            " kind=" + ValuableBoxScaleAdapter.DescribeSpecialBox(item) +
+                            " controller=" + (ScaleManager.GetController(target) != null));
+                    }
+
                     return;
                 }
             }
@@ -330,6 +352,12 @@ namespace ShrinkCart
                 return false;
             }
 
+            if (CartObjectGuard.IsCartLike(item))
+            {
+                PermanentlyExcludedObjectIds.Add(id);
+                return false;
+            }
+
             string cleanName = CleanName(item.name);
 
             if (IsPermanentlyExcludedCartItem(item, cleanName))
@@ -371,12 +399,7 @@ namespace ShrinkCart
                     return ModConfig.TryGetScaleFactor(category, out factor);
                 }
 
-                if (!ModConfig.ShrinkNonValuableItems.Value)
-                {
-                    return false;
-                }
-
-                category = ShrinkCategory.Fallback;
+                return false;
             }
 
             return ModConfig.TryGetScaleFactor(category, out factor);
@@ -501,6 +524,16 @@ namespace ShrinkCart
             if (item.GetComponent<SurplusValuable>() != null)
             {
                 category = ShrinkCategory.Surplus;
+                return true;
+            }
+
+            if (ValuableBoxScaleAdapter.IsValuableBox(item))
+            {
+                category = ShrinkCategory.ValuableBox;
+                DebugLog(
+                    "Resolved token/cosmetic box category for " +
+                    item.name +
+                    " kind=" + ValuableBoxScaleAdapter.DescribeSpecialBox(item));
                 return true;
             }
 

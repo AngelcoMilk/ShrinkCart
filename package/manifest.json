@@ -1,6 +1,6 @@
 {
   "name": "ShrinkCart",
-  "version_number": "0.2.12",
+  "version_number": "0.2.16",
   "author": "AngelcoMilk",
   "website_url": "https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/",
   "description": "R.E.P.O. 4.0 shrink-hauler cart with configurable item, weapon, and player scaling, host sync, and ScalerCore 0.6.1 support.",

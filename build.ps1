@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.12"
+$modVersion = "0.2.16"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -116,19 +116,28 @@ function Test-GameHookTargets {
     $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
     $targets = @(
         @{ Type = "PhysGrabInCart"; Method = "Add"; Parameters = @("PhysGrabObject") },
+        @{ Type = "CosmeticWorldObject"; Method = "Start"; Parameters = @() },
+        @{ Type = "PhysGrabObject"; Method = "Start"; Parameters = @() },
+        @{ Type = "ItemValuableBox"; Method = "Start"; Parameters = @() },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
         @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
+        @{ Type = "PlayerAvatar"; Method = "PlayerDeath"; Parameters = @("System.Int32") },
+        @{ Type = "PlayerAvatar"; Method = "PlayerDeathRPC"; Parameters = @("System.Int32", "Photon.Pun.PhotonMessageInfo") },
+        @{ Type = "PlayerAvatar"; Method = "Revive"; Parameters = @("System.Boolean") },
+        @{ Type = "PlayerAvatar"; Method = "ReviveRPC"; Parameters = @("System.Boolean", "Photon.Pun.PhotonMessageInfo") },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
     $requiredFields = @(
         @{ Type = "PhysGrabInCart"; Field = "cart" },
+        @{ Type = "CosmeticWorldObject"; Field = "physGrabObject" },
         @{ Type = "HurtCollider"; Field = "playerKill" },
         @{ Type = "HurtCollider"; Field = "playerLogic" },
         @{ Type = "EnemyRigidbody"; Field = "enemy" },
         @{ Type = "Enemy"; Field = "Health" },
         @{ Type = "EnemyHealth"; Field = "healthCurrent" },
         @{ Type = "ItemAttributes"; Field = "itemType" },
+        @{ Type = "ItemValuableBox"; Field = "boxChecker" },
         @{ Type = "PhysGrabObject"; Field = "isGun" },
         @{ Type = "PhysGrabCart"; Field = "isSmallCart" },
         @{ Type = "PhysGrabCart"; Field = "physGrabObject" },
@@ -208,7 +217,8 @@ function Test-ScalerCoreHookTargets {
         @{ Type = "ScalerCore.ScaleManager"; Method = "ForceUpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleController"; Method = "get_CurrentOptions"; Parameters = @() }
+        @{ Type = "ScalerCore.ScaleController"; Method = "get_CurrentOptions"; Parameters = @() },
+        @{ Type = "ScalerCore.Handlers.ScaleHandlerRegistry"; Method = "Register"; Parameters = @("ScalerCore.Handlers.IScaleHandler", "System.Func`2<UnityEngine.GameObject,System.Boolean>", "System.Int32") }
     )
     $requiredFields = @(
         @{ Type = "ScalerCore.ScaleOptions"; Field = "Factor" },

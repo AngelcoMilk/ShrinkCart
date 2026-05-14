@@ -103,7 +103,7 @@ namespace ShrinkCart
 
             _nextTickTime = now + TickIntervalSeconds;
 
-            if (!ModConfig.CartShrinkingEnabled.Value || !ModConfig.ShrinkShopPlayerItems.Value)
+            if (!ModConfig.CartShrinkingEnabled.Value || !ModConfig.ShrinkPlayers.Value)
             {
                 RestoreAll();
                 return;
@@ -145,6 +145,48 @@ namespace ShrinkCart
             }
 
             PlayerStates.Clear();
+            PlayerScaleDeathSafety.ClearAll();
+        }
+
+        internal static bool RestoreIfShrinkCartScaled(PlayerAvatar player, string reason)
+        {
+            if (player == null || player.gameObject == null)
+            {
+                return false;
+            }
+
+            int id = player.GetInstanceID();
+            PlayerState state;
+            if (!PlayerStates.TryGetValue(id, out state) || state == null || !state.ShrinkCartScaled)
+            {
+                return false;
+            }
+
+            if (!ModConfig.PlayerAutoRestoreBeforeDeath.Value)
+            {
+                DebugLog("Skipped player death safety restore because config is disabled: " + player.name + " reason=" + reason);
+                return false;
+            }
+
+            bool restored = RestorePlayer(player.gameObject);
+            state.ShrinkCartScaled = false;
+            state.WasInTriggerZone = false;
+            state.TriggeredThisStay = false;
+            state.TriggerZoneEnteredTime = 0.0f;
+            PlayerScaleDeathSafety.Unmark(player);
+            DebugLog("Restored ShrinkCart-scaled player before death/revive: " + player.name + " reason=" + reason);
+            return restored;
+        }
+
+        internal static void ClearPlayerState(PlayerAvatar player)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            PlayerStates.Remove(player.GetInstanceID());
+            PlayerScaleDeathSafety.Unmark(player);
         }
 
         private static void ProcessPlayer(PlayerAvatar player, float now)
@@ -211,6 +253,7 @@ namespace ShrinkCart
                 if (RestorePlayer(player.gameObject))
                 {
                     state.ShrinkCartScaled = false;
+                    PlayerScaleDeathSafety.Unmark(player);
                     DebugLog("Restored player after standing in cart center: " + player.name);
                 }
 
@@ -226,6 +269,7 @@ namespace ShrinkCart
             if (ShrinkPlayer(player.gameObject))
             {
                 state.ShrinkCartScaled = true;
+                PlayerScaleDeathSafety.Mark(player);
                 DebugLog("Shrunk player after standing in cart center: " + player.name);
             }
         }
@@ -246,7 +290,7 @@ namespace ShrinkCart
             options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
             options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
             options.IgnoreBonkExpand = true;
-            options.RejectExternalApply = true;
+            options.RejectExternalApply = false;
 
             try
             {

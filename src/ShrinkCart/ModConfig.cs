@@ -18,6 +18,7 @@ namespace ShrinkCart
         EnemyOrbBig,
         EnemyOrbBerserker,
         Surplus,
+        ValuableBox,
         Fallback
     }
 
@@ -29,10 +30,11 @@ namespace ShrinkCart
         internal static ConfigEntry<float> CartLeaveDebounceSeconds;
         internal static ConfigEntry<float> ReshrinkCooldownSeconds;
         internal static ConfigEntry<bool> PreserveCartMass;
-        internal static ConfigEntry<bool> ShrinkNonValuableItems;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
+        internal static ConfigEntry<bool> ShrinkPlayers;
         internal static ConfigEntry<float> PlayerCartScaleFactor;
         internal static ConfigEntry<float> PlayerCartStandTriggerSeconds;
+        internal static ConfigEntry<bool> PlayerAutoRestoreBeforeDeath;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -59,6 +61,8 @@ namespace ShrinkCart
 
         internal static ConfigEntry<bool> SurplusEnabled;
         internal static ConfigEntry<float> SurplusScaleFactor;
+        internal static ConfigEntry<bool> ValuableBoxEnabled;
+        internal static ConfigEntry<float> ValuableBoxScaleFactor;
         internal static ConfigEntry<float> FallbackScaleFactor;
 
         internal static ConfigEntry<bool> VehicleCrushInstantKill;
@@ -105,29 +109,35 @@ namespace ShrinkCart
                 true,
                 "启用后只改变视觉尺寸，不降低物品重量，避免购物车承重过于取巧。");
 
-            ShrinkNonValuableItems = config.Bind(
-                "购物车",
-                "普通物品也缩小",
-                true,
-                "启用后，非贵重、非商店用品的普通物品也会使用“普通或未知物品倍率”。");
-
             ShrinkShopPlayerItems = config.Bind(
                 "购物车",
-                "商店/人物用品也缩小",
+                "商店用品也缩小",
                 false,
-                "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品会使用默认缩小倍率；玩家站在购物车中心区域一段时间会切换缩小/恢复状态。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
+                "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品会使用默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
+
+            ShrinkPlayers = config.Bind(
+                "购物车",
+                "玩家也缩小",
+                true,
+                "启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复状态。此开关不影响枪、血包、工具等商店用品。");
 
             PlayerCartScaleFactor = config.Bind(
                 "购物车",
                 "玩家进车缩放倍率",
                 0.55f,
-                Ranged("开启“商店/人物用品也缩小”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
+                Ranged("开启“玩家也缩小”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
 
             PlayerCartStandTriggerSeconds = config.Bind(
                 "购物车",
                 "玩家站车触发时间",
                 2.0f,
-                Ranged("开启“商店/人物用品也缩小”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
+                Ranged("开启“玩家也缩小”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
+
+            PlayerAutoRestoreBeforeDeath = config.Bind(
+                "购物车",
+                "玩家死亡前自动恢复",
+                true,
+                "启用后，由 ShrinkCart 缩小的玩家在死亡或复活流程前会先恢复原尺寸，减少死亡头颅和复活 mod 冲突。");
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -188,21 +198,33 @@ namespace ShrinkCart
 
             SurplusEnabled = config.Bind(
                 "特殊物品",
-                "启用 Surplus 缩小",
-                true,
-                "启用后，SurplusValuable 会使用单独倍率。");
+                "启用钱袋/Surplus 缩小",
+                LegacyBool(config, true, "特殊物品", "启用 Surplus 缩小"),
+                "启用后，钱袋/SurplusValuable 会使用单独倍率。");
 
             SurplusScaleFactor = config.Bind(
                 "特殊物品",
-                "Surplus 倍率",
-                0.25f,
-                Ranged("SurplusValuable 放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
+                "钱袋/Surplus 倍率",
+                LegacyFloat(config, 0.25f, "特殊物品", "Surplus 倍率"),
+                Ranged("钱袋/SurplusValuable 放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
+
+            ValuableBoxEnabled = config.Bind(
+                "特殊物品",
+                "启用代币箱缩小",
+                true,
+                "启用后，新版本抽奖用代币箱 ItemValuableBox 会使用单独倍率。");
+
+            ValuableBoxScaleFactor = config.Bind(
+                "特殊物品",
+                "代币箱倍率",
+                0.4f,
+                Ranged("抽奖用代币箱 ItemValuableBox 放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
 
             FallbackScaleFactor = config.Bind(
-                "普通或未知物品",
-                "默认缩小倍率",
-                0.5f,
-                Ranged("普通物品、未知分类物品，或开启商店用品缩放后的实用品放入购物车后的目标尺寸比例。", 0.05f, 1.0f));
+                "商店用品",
+                "商店用品缩小倍率",
+                LegacyFloat(config, 0.5f, "普通或未知物品", "默认缩小倍率"),
+                Ranged("开启“商店用品也缩小”后，枪、血包、工具等实用品放入购物车后的目标尺寸比例。也作为未知贵重物分类的兜底倍率。", 0.05f, 1.0f));
 
             VehicleCrushInstantKill = config.Bind(
                 "车辆碾压",
@@ -228,10 +250,11 @@ namespace ShrinkCart
             WatchScaling(CartLeaveDebounceSeconds);
             WatchScaling(ReshrinkCooldownSeconds);
             WatchScaling(PreserveCartMass);
-            WatchScaling(ShrinkNonValuableItems);
             WatchScaling(ShrinkShopPlayerItems);
+            WatchScaling(ShrinkPlayers);
             WatchScaling(PlayerCartScaleFactor);
             WatchScaling(PlayerCartStandTriggerSeconds);
+            WatchScaling(PlayerAutoRestoreBeforeDeath);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);
@@ -254,6 +277,8 @@ namespace ShrinkCart
             WatchScaling(EnemyOrbBerserkerScaleFactor);
             WatchScaling(SurplusEnabled);
             WatchScaling(SurplusScaleFactor);
+            WatchScaling(ValuableBoxEnabled);
+            WatchScaling(ValuableBoxScaleFactor);
             WatchScaling(FallbackScaleFactor);
 
         }
@@ -316,6 +341,8 @@ namespace ShrinkCart
                     return TryEnemyOrb(EnemyOrbBerserkerScaleFactor, out factor);
                 case ShrinkCategory.Surplus:
                     return TryCategory(SurplusEnabled, SurplusScaleFactor, out factor);
+                case ShrinkCategory.ValuableBox:
+                    return TryCategory(ValuableBoxEnabled, ValuableBoxScaleFactor, out factor);
                 default:
                     factor = SafeFactor(FallbackScaleFactor.Value);
                     return true;

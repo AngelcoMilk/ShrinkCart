@@ -8,16 +8,16 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC0212";
+        private const string PayloadVersion = "SC0216";
         private const float SyncIntervalSeconds = 0.5f;
-        private const int CategoryCount = 13;
+        private const int CategoryCount = 14;
 
         private sealed class Snapshot
         {
             internal bool CartEnabled;
             internal bool HideScaleFlash;
-            internal bool ShrinkNonValuableItems;
             internal bool ShrinkShopPlayerItems;
+            internal bool ShrinkPlayers;
             internal bool EnemyInCartInstantKill;
             internal bool PreserveCartMass;
             internal bool SuppressValuableDamageRestore;
@@ -27,6 +27,7 @@ namespace ShrinkCart
             internal float RestoreScaleSpeed;
             internal float PlayerCartScaleFactor;
             internal float PlayerCartStandTriggerSeconds;
+            internal bool PlayerAutoRestoreBeforeDeath;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
@@ -119,8 +120,8 @@ namespace ShrinkCart
             Builder.Append(PayloadVersion);
             Append(ModConfig.CartShrinkingEnabled.Value);
             Append(ModConfig.HideScaleFlash.Value);
-            Append(ModConfig.ShrinkNonValuableItems.Value);
             Append(ModConfig.ShrinkShopPlayerItems.Value);
+            Append(ModConfig.ShrinkPlayers.Value);
             Append(ModConfig.EnemyInCartInstantKill.Value);
             Append(ModConfig.PreserveCartMass.Value);
             Append(ModConfig.SuppressValuableDamageRestore.Value);
@@ -130,6 +131,7 @@ namespace ShrinkCart
             Append(ModConfig.SafeRestoreScaleSpeed());
             Append(ModConfig.SafePlayerCartScaleFactor());
             Append(ModConfig.SafePlayerCartStandTriggerSeconds());
+            Append(ModConfig.PlayerAutoRestoreBeforeDeath.Value);
 
             for (int i = 0; i < CategoryCount; i++)
             {
@@ -147,7 +149,7 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 14 + CategoryCount * 2;
+            int expected = 15 + CategoryCount * 2;
             if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
@@ -157,8 +159,8 @@ namespace ShrinkCart
             int index = 1;
             if (!TryParseBool(parts[index++], out parsed.CartEnabled) ||
                 !TryParseBool(parts[index++], out parsed.HideScaleFlash) ||
-                !TryParseBool(parts[index++], out parsed.ShrinkNonValuableItems) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkShopPlayerItems) ||
+                !TryParseBool(parts[index++], out parsed.ShrinkPlayers) ||
                 !TryParseBool(parts[index++], out parsed.EnemyInCartInstantKill) ||
                 !TryParseBool(parts[index++], out parsed.PreserveCartMass) ||
                 !TryParseBool(parts[index++], out parsed.SuppressValuableDamageRestore) ||
@@ -167,7 +169,8 @@ namespace ShrinkCart
                 !TryParseFloat(parts[index++], out parsed.ScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.PlayerCartScaleFactor) ||
-                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds))
+                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds) ||
+                !TryParseBool(parts[index++], out parsed.PlayerAutoRestoreBeforeDeath))
             {
                 return false;
             }
@@ -237,6 +240,10 @@ namespace ShrinkCart
                 case ShrinkCategory.Surplus:
                     enabled = ModConfig.SurplusEnabled.Value;
                     factor = ModConfig.SurplusScaleFactor.Value;
+                    break;
+                case ShrinkCategory.ValuableBox:
+                    enabled = ModConfig.ValuableBoxEnabled.Value;
+                    factor = ModConfig.ValuableBoxScaleFactor.Value;
                     break;
                 default:
                     enabled = true;
