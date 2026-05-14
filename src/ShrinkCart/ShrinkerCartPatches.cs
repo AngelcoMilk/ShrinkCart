@@ -27,7 +27,26 @@ namespace ShrinkCart
     {
         private static void Postfix(PhysGrabCart __instance)
         {
+            CartRegistry.RegisterCart(__instance);
             PlayerCartScaleController.RegisterCart(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(PhysGrabCart), "FixedUpdate")]
+    internal static class PhysGrabCartFixedUpdatePatch
+    {
+        private static void Postfix(PhysGrabCart __instance)
+        {
+            CartCollisionGuard.FixedTick(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(PhysGrabCart), "ObjectsInCart")]
+    internal static class PhysGrabCartObjectsInCartPatch
+    {
+        private static void Postfix(PhysGrabCart __instance)
+        {
+            CartCollisionGuard.CleanCartContents(__instance);
         }
     }
 
@@ -52,6 +71,7 @@ namespace ShrinkCart
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
+            PlayerScaleDeathSafety.ClearAll();
             PlayerCartScaleController.Reset();
             CartCollisionGuard.Reset();
             VehicleCrushController.RestoreAll();
@@ -75,6 +95,24 @@ namespace ShrinkCart
         private static void Prefix(PlayerAvatar __instance)
         {
             PlayerScaleDeathSafety.RestoreBeforeDeath(__instance, "PlayerDeathRPC");
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerHealth), "Death")]
+    internal static class PlayerHealthDeathPatch
+    {
+        private static void Prefix(PlayerHealth __instance)
+        {
+            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance == null ? null : __instance.GetComponent<PlayerAvatar>(), "PlayerHealth.Death");
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerDeathHead), "Trigger")]
+    internal static class PlayerDeathHeadTriggerPatch
+    {
+        private static void Prefix(PlayerDeathHead __instance)
+        {
+            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance == null ? null : __instance.playerAvatar, "PlayerDeathHead.Trigger");
         }
     }
 

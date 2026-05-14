@@ -32,9 +32,15 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
         internal static ConfigEntry<bool> ShrinkPlayers;
+        internal static ConfigEntry<bool> ExperimentalPlayerScaling;
         internal static ConfigEntry<float> PlayerCartScaleFactor;
         internal static ConfigEntry<float> PlayerCartStandTriggerSeconds;
         internal static ConfigEntry<bool> PlayerAutoRestoreBeforeDeath;
+        internal static ConfigEntry<bool> PreventCartOverlap;
+        internal static ConfigEntry<float> CartSeparationStrength;
+        internal static ConfigEntry<float> CartMaximumCorrectionDistance;
+        internal static ConfigEntry<bool> CartClearCrushVelocity;
+        internal static ConfigEntry<float> CartTemporaryIgnoreSeconds;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -119,7 +125,13 @@ namespace ShrinkCart
                 "购物车",
                 "玩家也缩小",
                 true,
-                "启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复状态。此开关不影响枪、血包、工具等商店用品。");
+                "玩家缩放的基础开关。还需要同时开启“启用实验性玩家缩放”才会生效。此开关不影响枪、血包、工具等商店用品。");
+
+            ExperimentalPlayerScaling = config.Bind(
+                "购物车",
+                "启用实验性玩家缩放",
+                false,
+                "默认关闭。启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复。玩家缩放依赖 ScalerCore 的玩家状态链，如遇到死亡或复活异常请保持关闭。");
 
             PlayerCartScaleFactor = config.Bind(
                 "购物车",
@@ -138,6 +150,36 @@ namespace ShrinkCart
                 "玩家死亡前自动恢复",
                 true,
                 "启用后，由 ShrinkCart 缩小的玩家在死亡或复活流程前会先恢复原尺寸，减少死亡头颅和复活 mod 冲突。");
+
+            PreventCartOverlap = config.Bind(
+                "购物车",
+                "防止车辆互相重叠",
+                true,
+                "启用后，ShrinkCart 会阻止购物车、小推车和车类物品进入另一辆车的车内列表，并在检测到车体重叠时主动脱困。");
+
+            CartSeparationStrength = config.Bind(
+                "购物车",
+                "车辆硬碰撞修正强度",
+                1.0f,
+                Ranged("两辆车发生穿透时，按 collider 穿透向量硬修正的强度。", 0.1f, 5.0f));
+
+            CartMaximumCorrectionDistance = config.Bind(
+                "购物车",
+                "车辆最大单帧修正距离",
+                0.35f,
+                Ranged("一个物理帧内单辆车最多被推回多远，用于避免穿透修正过度弹飞。", 0.05f, 1.0f));
+
+            CartClearCrushVelocity = config.Bind(
+                "购物车",
+                "车辆挤压速度清除",
+                true,
+                "启用后，两辆车互相挤压时会清除继续挤入对方的速度分量，保留擦边滑动。");
+
+            CartTemporaryIgnoreSeconds = config.Bind(
+                "购物车",
+                "车辆临时忽略碰撞时间（已废弃）",
+                0.75f,
+                Ranged("v0.2.18 起不再使用。新版不会临时关闭车对车碰撞，改用硬碰撞修正。", 0.05f, 3.0f));
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -252,9 +294,15 @@ namespace ShrinkCart
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkShopPlayerItems);
             WatchScaling(ShrinkPlayers);
+            WatchScaling(ExperimentalPlayerScaling);
             WatchScaling(PlayerCartScaleFactor);
             WatchScaling(PlayerCartStandTriggerSeconds);
             WatchScaling(PlayerAutoRestoreBeforeDeath);
+            WatchScaling(PreventCartOverlap);
+            WatchScaling(CartSeparationStrength);
+            WatchScaling(CartMaximumCorrectionDistance);
+            WatchScaling(CartClearCrushVelocity);
+            WatchScaling(CartTemporaryIgnoreSeconds);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);
@@ -311,6 +359,21 @@ namespace ShrinkCart
         internal static float SafePlayerCartStandTriggerSeconds()
         {
             return Mathf.Clamp(PlayerCartStandTriggerSeconds.Value, 0.25f, 10.0f);
+        }
+
+        internal static float SafeCartSeparationStrength()
+        {
+            return Mathf.Clamp(CartSeparationStrength.Value, 0.1f, 5.0f);
+        }
+
+        internal static float SafeCartMaximumCorrectionDistance()
+        {
+            return Mathf.Clamp(CartMaximumCorrectionDistance.Value, 0.05f, 1.0f);
+        }
+
+        internal static float SafeCartTemporaryIgnoreSeconds()
+        {
+            return Mathf.Clamp(CartTemporaryIgnoreSeconds.Value, 0.05f, 3.0f);
         }
 
         internal static bool TryGetScaleFactor(ShrinkCategory category, out float factor)

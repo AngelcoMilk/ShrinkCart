@@ -91,116 +91,29 @@ namespace ShrinkCart
 
     internal static class CartCollisionGuard
     {
-        private const float IgnoreSeconds = 0.75f;
-
-        private sealed class IgnoredPair
-        {
-            internal Collider A;
-            internal Collider B;
-            internal float RestoreTime;
-        }
-
-        private static readonly List<IgnoredPair> IgnoredPairs = new List<IgnoredPair>(32);
-        private static readonly List<int> RemoveIndexes = new List<int>(16);
-
         internal static void HandleBlockedCartInCart(PhysGrabInCart destination, PhysGrabObject item)
         {
-            if (destination == null || destination.cart == null || item == null)
-            {
-                return;
-            }
-
-            Collider[] destinationColliders = destination.cart.GetComponentsInChildren<Collider>(true);
-            Collider[] itemColliders = item.GetComponentsInChildren<Collider>(true);
-            if (destinationColliders == null || itemColliders == null)
-            {
-                return;
-            }
-
-            float restoreTime = Time.time + IgnoreSeconds;
-            for (int i = 0; i < destinationColliders.Length; i++)
-            {
-                Collider a = destinationColliders[i];
-                if (a == null || a.isTrigger)
-                {
-                    continue;
-                }
-
-                for (int j = 0; j < itemColliders.Length; j++)
-                {
-                    Collider b = itemColliders[j];
-                    if (b == null || b.isTrigger || a == b)
-                    {
-                        continue;
-                    }
-
-                    Physics.IgnoreCollision(a, b, true);
-                    IgnoredPairs.Add(new IgnoredPair
-                    {
-                        A = a,
-                        B = b,
-                        RestoreTime = restoreTime
-                    });
-                }
-            }
-
-            DebugLog("Temporarily ignored cart collision for blocked cart-in-cart object: " + item.name);
+            CartRegistry.HandleBlockedCartInCart(destination, item);
         }
 
         internal static void Tick()
         {
-            if (IgnoredPairs.Count == 0)
-            {
-                return;
-            }
+            CartRegistry.Tick();
+        }
 
-            float now = Time.time;
-            RemoveIndexes.Clear();
-            for (int i = 0; i < IgnoredPairs.Count; i++)
-            {
-                IgnoredPair pair = IgnoredPairs[i];
-                if (pair == null || now < pair.RestoreTime)
-                {
-                    continue;
-                }
+        internal static void FixedTick(PhysGrabCart cart)
+        {
+            CartRegistry.FixedTick(cart);
+        }
 
-                if (pair.A != null && pair.B != null)
-                {
-                    Physics.IgnoreCollision(pair.A, pair.B, false);
-                }
-
-                RemoveIndexes.Add(i);
-            }
-
-            for (int i = RemoveIndexes.Count - 1; i >= 0; i--)
-            {
-                IgnoredPairs.RemoveAt(RemoveIndexes[i]);
-            }
-
-            RemoveIndexes.Clear();
+        internal static void CleanCartContents(PhysGrabCart cart)
+        {
+            CartRegistry.CleanCartContents(cart);
         }
 
         internal static void Reset()
         {
-            for (int i = 0; i < IgnoredPairs.Count; i++)
-            {
-                IgnoredPair pair = IgnoredPairs[i];
-                if (pair != null && pair.A != null && pair.B != null)
-                {
-                    Physics.IgnoreCollision(pair.A, pair.B, false);
-                }
-            }
-
-            IgnoredPairs.Clear();
-            RemoveIndexes.Clear();
-        }
-
-        private static void DebugLog(string message)
-        {
-            if (ModConfig.DebugLogging != null && ModConfig.DebugLogging.Value)
-            {
-                Plugin.Log.LogInfo(message);
-            }
+            CartRegistry.Reset();
         }
     }
 }
