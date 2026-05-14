@@ -374,12 +374,18 @@ if ($PackageToDesktop) {
     Copy-Item -LiteralPath (Join-Path $distRoot "icon.png") -Destination (Join-Path $packageStage "icon.png") -Force
     Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $packageStage "BepInEx\plugins\$modName\$modName.dll") -Force
 
-    Compress-Archive -LiteralPath `
-        (Join-Path $packageStage "manifest.json"), `
-        (Join-Path $packageStage "README.md"), `
-        (Join-Path $packageStage "icon.png"), `
-        (Join-Path $packageStage "BepInEx") `
-        -DestinationPath $desktopZip
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [System.IO.Compression.ZipFile]::Open($desktopZip, [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "manifest.json"), "manifest.json") | Out-Null
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "README.md"), "README.md") | Out-Null
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "icon.png"), "icon.png") | Out-Null
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $pluginOut, "BepInEx/plugins/$modName/$modName.dll") | Out-Null
+    }
+    finally {
+        $zip.Dispose()
+    }
 
     Write-Host "Packaged $desktopZip"
 }
