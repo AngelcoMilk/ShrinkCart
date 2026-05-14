@@ -32,6 +32,7 @@ namespace ShrinkCart
         private static readonly HashSet<int> FixedUpdateHandledCartIds = new HashSet<int>();
         private static readonly HashSet<long> FixedStepResolvedPairs = new HashSet<long>();
         private static int _lastFixedStepKey = -1;
+        private static int _lastPruneFixedStepKey = -1;
 
         private static readonly FieldInfo PhysGrabCartItemsInCartField =
             typeof(PhysGrabCart).GetField("itemsInCart", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -64,40 +65,15 @@ namespace ShrinkCart
             DebugLog("Registered cart guard target: " + cart.name);
         }
 
-        internal static void Tick()
-        {
-            if (!IsHostOrSingleplayer())
-            {
-                return;
-            }
-
-            PruneInvalidCarts();
-            if (Carts.Count == 0)
-            {
-                return;
-            }
-
-            foreach (CartState state in Carts.Values)
-            {
-                RemoveCartLikeItems(state);
-            }
-
-            if (!ModConfig.PreventCartOverlap.Value)
-            {
-                return;
-            }
-
-            ResolveAllOverlaps();
-        }
-
         internal static void FixedTick(PhysGrabCart cart)
         {
-            if (cart == null || !ModConfig.PreventCartOverlap.Value || !IsHostOrSingleplayer())
+            if (cart == null || !IsHostOrSingleplayer())
             {
                 return;
             }
 
-            PruneInvalidCarts();
+            PrepareFixedStepPairCache();
+            PruneInvalidCartsOncePerFixedStep();
             CartState state = GetOrCreateState(cart);
             if (state == null)
             {
@@ -106,7 +82,6 @@ namespace ShrinkCart
 
             RemoveCartLikeItems(state);
 
-            PrepareFixedStepPairCache();
             int id = cart.GetInstanceID();
             if (FixedUpdateHandledCartIds.Contains(id))
             {
@@ -130,16 +105,12 @@ namespace ShrinkCart
             FixedUpdateHandledCartIds.Clear();
             FixedStepResolvedPairs.Clear();
             _lastFixedStepKey = -1;
+            _lastPruneFixedStepKey = -1;
         }
 
         internal static void HandleBlockedCartInCart(PhysGrabInCart destination, PhysGrabObject item)
         {
             if (destination == null || destination.cart == null || item == null)
-            {
-                return;
-            }
-
-            if (!ModConfig.PreventCartOverlap.Value)
             {
                 return;
             }
@@ -249,6 +220,18 @@ namespace ShrinkCart
             RemoveCartIds.Clear();
         }
 
+        private static void PruneInvalidCartsOncePerFixedStep()
+        {
+            int key = _lastFixedStepKey;
+            if (key == _lastPruneFixedStepKey)
+            {
+                return;
+            }
+
+            _lastPruneFixedStepKey = key;
+            PruneInvalidCarts();
+        }
+
         private static void RemoveCartLikeItems(CartState state)
         {
             List<PhysGrabObject> items = GetItemsInCart(state == null ? null : state.Cart);
@@ -273,7 +256,7 @@ namespace ShrinkCart
                     items.RemoveAt(i);
                     changed = true;
                     CartState other = FindCartState(item);
-                    if (other != null && other != state && ModConfig.PreventCartOverlap.Value)
+                    if (other != null && other != state)
                     {
                         ResolveOverlap(state, other);
                     }
@@ -374,20 +357,6 @@ namespace ShrinkCart
             }
 
             SeparateCarts(a, b, penetration.Direction, penetration.Distance);
-        }
-
-        private static void ResolveAllOverlaps()
-        {
-            List<CartState> states = GetCartStatesScratch();
-            for (int i = 0; i < states.Count; i++)
-            {
-                for (int j = i + 1; j < states.Count; j++)
-                {
-                    ResolveOverlap(states[i], states[j]);
-                }
-            }
-
-            states.Clear();
         }
 
         private static void ResolveOverlapsFor(CartState state)
@@ -541,11 +510,8 @@ namespace ShrinkCart
                 MoveCart(rbB, -move);
             }
 
-            if (ModConfig.CartClearCrushVelocity.Value)
-            {
-                RemoveClosingVelocity(rbA, direction);
-                RemoveClosingVelocity(rbB, -direction);
-            }
+            RemoveClosingVelocity(rbA, direction);
+            RemoveClosingVelocity(rbB, -direction);
 
             ClampVelocity(rbA);
             ClampVelocity(rbB);

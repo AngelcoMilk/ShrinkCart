@@ -7,32 +7,50 @@ namespace ShrinkCart
 {
     internal static class PlayerScaleDeathSafety
     {
-        private static readonly HashSet<int> ShrinkCartScaledPlayers = new HashSet<int>();
+        private static readonly HashSet<int> ActiveShrinkCartScaledPlayers = new HashSet<int>();
+        private static readonly HashSet<int> EverShrinkCartScaledPlayers = new HashSet<int>();
 
         internal static void Mark(PlayerAvatar player)
         {
             if (player != null)
             {
-                ShrinkCartScaledPlayers.Add(player.GetInstanceID());
+                int id = player.GetInstanceID();
+                ActiveShrinkCartScaledPlayers.Add(id);
+                EverShrinkCartScaledPlayers.Add(id);
             }
         }
 
-        internal static void Unmark(PlayerAvatar player)
+        internal static void UnmarkActive(PlayerAvatar player)
         {
             if (player != null)
             {
-                ShrinkCartScaledPlayers.Remove(player.GetInstanceID());
+                ActiveShrinkCartScaledPlayers.Remove(player.GetInstanceID());
             }
+        }
+
+        internal static void ClearActive()
+        {
+            ActiveShrinkCartScaledPlayers.Clear();
         }
 
         internal static void ClearAll()
         {
-            ShrinkCartScaledPlayers.Clear();
+            try
+            {
+                ScaleManager.CleanupAll();
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogWarning("Failed global ScalerCore cleanup during ShrinkCart reset: " + ex.Message);
+            }
+
+            ActiveShrinkCartScaledPlayers.Clear();
+            EverShrinkCartScaledPlayers.Clear();
         }
 
         internal static void RestoreBeforeDeath(PlayerAvatar player, string reason)
         {
-            if (player == null || !ShrinkCartScaledPlayers.Contains(player.GetInstanceID()))
+            if (player == null || !EverShrinkCartScaledPlayers.Contains(player.GetInstanceID()))
             {
                 return;
             }
@@ -52,12 +70,13 @@ namespace ShrinkCart
                 return;
             }
 
-            if (ShrinkCartScaledPlayers.Contains(player.GetInstanceID()))
+            if (EverShrinkCartScaledPlayers.Contains(player.GetInstanceID()))
             {
                 PlayerCartScaleController.RestoreIfShrinkCartScaled(player, reason);
+                ForceRestoreMarkedPlayer(player, reason);
             }
 
-            Unmark(player);
+            ActiveShrinkCartScaledPlayers.Remove(player.GetInstanceID());
         }
 
         private static void ForceRestoreMarkedPlayer(PlayerAvatar player, string reason)
@@ -68,23 +87,22 @@ namespace ShrinkCart
                 return;
             }
 
-            if (!ModConfig.PlayerAutoRestoreBeforeDeath.Value)
-            {
-                return;
-            }
-
             try
             {
                 ScaleController controller = ScaleManager.GetController(target);
-                if (controller != null && controller.IsScaled)
+                if (controller != null)
                 {
-                    ScaleOptions options = controller.CurrentOptions;
-                    options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
-                    options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
-                    options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
-                    ScaleManager.ForceUpdateOptions(target, options);
-                    ScaleManager.ForceRestore(target);
-                    DebugLog("Force restored marked player before death/revive: " + player.name + " reason=" + reason);
+                    if (controller.IsScaled)
+                    {
+                        ScaleOptions options = controller.CurrentOptions;
+                        options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
+                        options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
+                        options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
+                        ScaleManager.ForceUpdateOptions(target, options);
+                        ScaleManager.ForceRestore(target);
+                    }
+
+                    DebugLog("Cleaned ShrinkCart player scale state before death/revive: " + player.name + " reason=" + reason);
                 }
             }
             catch (Exception ex)
@@ -93,7 +111,7 @@ namespace ShrinkCart
             }
             finally
             {
-                Unmark(player);
+                ActiveShrinkCartScaledPlayers.Remove(player.GetInstanceID());
             }
         }
 

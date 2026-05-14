@@ -145,7 +145,7 @@ namespace ShrinkCart
             }
 
             PlayerStates.Clear();
-            PlayerScaleDeathSafety.ClearAll();
+            PlayerScaleDeathSafety.ClearActive();
         }
 
         internal static bool RestoreIfShrinkCartScaled(PlayerAvatar player, string reason)
@@ -162,18 +162,12 @@ namespace ShrinkCart
                 return false;
             }
 
-            if (!ModConfig.PlayerAutoRestoreBeforeDeath.Value)
-            {
-                DebugLog("Skipped player death safety restore because config is disabled: " + player.name + " reason=" + reason);
-                return false;
-            }
-
             bool restored = RestorePlayer(player.gameObject);
             state.ShrinkCartScaled = false;
             state.WasInTriggerZone = false;
             state.TriggeredThisStay = false;
             state.TriggerZoneEnteredTime = 0.0f;
-            PlayerScaleDeathSafety.Unmark(player);
+            PlayerScaleDeathSafety.UnmarkActive(player);
             DebugLog("Restored ShrinkCart-scaled player before death/revive: " + player.name + " reason=" + reason);
             return restored;
         }
@@ -186,7 +180,7 @@ namespace ShrinkCart
             }
 
             PlayerStates.Remove(player.GetInstanceID());
-            PlayerScaleDeathSafety.Unmark(player);
+            PlayerScaleDeathSafety.UnmarkActive(player);
         }
 
         private static void ProcessPlayer(PlayerAvatar player, float now)
@@ -214,6 +208,7 @@ namespace ShrinkCart
             if (state.ShrinkCartScaled && !ScaleManager.IsScaled(player.gameObject))
             {
                 state.ShrinkCartScaled = false;
+                PlayerScaleDeathSafety.UnmarkActive(player);
             }
 
             bool inTriggerZone = IsPlayerStandingInAnyCart(player);
@@ -253,7 +248,7 @@ namespace ShrinkCart
                 if (RestorePlayer(player.gameObject))
                 {
                     state.ShrinkCartScaled = false;
-                    PlayerScaleDeathSafety.Unmark(player);
+                    PlayerScaleDeathSafety.UnmarkActive(player);
                     DebugLog("Restored player after standing in cart center: " + player.name);
                 }
 
@@ -289,7 +284,7 @@ namespace ShrinkCart
             options.AllowedTargets = ScaleTargets.Players;
             options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
             options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
-            options.IgnoreBonkExpand = true;
+            options.IgnoreBonkExpand = false;
             options.RejectExternalApply = false;
 
             try

@@ -32,15 +32,8 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
         internal static ConfigEntry<bool> ShrinkPlayers;
-        internal static ConfigEntry<bool> ExperimentalPlayerScaling;
         internal static ConfigEntry<float> PlayerCartScaleFactor;
         internal static ConfigEntry<float> PlayerCartStandTriggerSeconds;
-        internal static ConfigEntry<bool> PlayerAutoRestoreBeforeDeath;
-        internal static ConfigEntry<bool> PreventCartOverlap;
-        internal static ConfigEntry<float> CartSeparationStrength;
-        internal static ConfigEntry<float> CartMaximumCorrectionDistance;
-        internal static ConfigEntry<bool> CartClearCrushVelocity;
-        internal static ConfigEntry<float> CartTemporaryIgnoreSeconds;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -76,6 +69,9 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> DebugLogging;
 
         internal static int ScalingConfigVersion;
+
+        private const float CartSeparationStrengthDefault = 1.0f;
+        private const float CartMaximumCorrectionDistanceDefault = 0.35f;
 
         internal static void Bind(ConfigFile config)
         {
@@ -117,69 +113,27 @@ namespace ShrinkCart
 
             ShrinkShopPlayerItems = config.Bind(
                 "购物车",
-                "商店用品也缩小",
+                "启用商店用品缩小",
                 false,
                 "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品会使用默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
 
             ShrinkPlayers = config.Bind(
                 "购物车",
-                "玩家也缩小",
+                "启用玩家缩放",
                 true,
-                "玩家缩放的基础开关。还需要同时开启“启用实验性玩家缩放”才会生效。此开关不影响枪、血包、工具等商店用品。");
-
-            ExperimentalPlayerScaling = config.Bind(
-                "购物车",
-                "启用实验性玩家缩放",
-                false,
-                "默认关闭。启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复。玩家缩放依赖 ScalerCore 的玩家状态链，如遇到死亡或复活异常请保持关闭。");
+                "启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复。玩家死亡或复活前会自动恢复，以避免死亡头颅流程冲突。此开关不影响枪、血包、工具等商店用品。");
 
             PlayerCartScaleFactor = config.Bind(
                 "购物车",
                 "玩家进车缩放倍率",
                 0.55f,
-                Ranged("开启“玩家也缩小”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
+                Ranged("开启“启用玩家缩放”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
 
             PlayerCartStandTriggerSeconds = config.Bind(
                 "购物车",
                 "玩家站车触发时间",
                 2.0f,
-                Ranged("开启“玩家也缩小”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
-
-            PlayerAutoRestoreBeforeDeath = config.Bind(
-                "购物车",
-                "玩家死亡前自动恢复",
-                true,
-                "启用后，由 ShrinkCart 缩小的玩家在死亡或复活流程前会先恢复原尺寸，减少死亡头颅和复活 mod 冲突。");
-
-            PreventCartOverlap = config.Bind(
-                "购物车",
-                "防止车辆互相重叠",
-                true,
-                "启用后，ShrinkCart 会阻止购物车、小推车和车类物品进入另一辆车的车内列表，并在检测到车体重叠时主动脱困。");
-
-            CartSeparationStrength = config.Bind(
-                "购物车",
-                "车辆硬碰撞修正强度",
-                1.0f,
-                Ranged("两辆车发生穿透时，按 collider 穿透向量硬修正的强度。", 0.1f, 5.0f));
-
-            CartMaximumCorrectionDistance = config.Bind(
-                "购物车",
-                "车辆最大单帧修正距离",
-                0.35f,
-                Ranged("一个物理帧内单辆车最多被推回多远，用于避免穿透修正过度弹飞。", 0.05f, 1.0f));
-
-            CartClearCrushVelocity = config.Bind(
-                "购物车",
-                "车辆挤压速度清除",
-                true,
-                "启用后，两辆车互相挤压时会清除继续挤入对方的速度分量，保留擦边滑动。");
-
-            CartTemporaryIgnoreSeconds = config.Bind(
-                "购物车",
-                "车辆临时忽略碰撞时间（已废弃）",
-                0.75f,
-                Ranged("v0.2.18 起不再使用。新版不会临时关闭车对车碰撞，改用硬碰撞修正。", 0.05f, 3.0f));
+                Ranged("开启“启用玩家缩放”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -266,7 +220,7 @@ namespace ShrinkCart
                 "商店用品",
                 "商店用品缩小倍率",
                 LegacyFloat(config, 0.5f, "普通或未知物品", "默认缩小倍率"),
-                Ranged("开启“商店用品也缩小”后，枪、血包、工具等实用品放入购物车后的目标尺寸比例。也作为未知贵重物分类的兜底倍率。", 0.05f, 1.0f));
+                Ranged("开启“启用商店用品缩小”后，枪、血包、工具等实用品放入购物车后的目标尺寸比例。也作为未知贵重物分类的兜底倍率。", 0.05f, 1.0f));
 
             VehicleCrushInstantKill = config.Bind(
                 "车辆碾压",
@@ -294,15 +248,8 @@ namespace ShrinkCart
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkShopPlayerItems);
             WatchScaling(ShrinkPlayers);
-            WatchScaling(ExperimentalPlayerScaling);
             WatchScaling(PlayerCartScaleFactor);
             WatchScaling(PlayerCartStandTriggerSeconds);
-            WatchScaling(PlayerAutoRestoreBeforeDeath);
-            WatchScaling(PreventCartOverlap);
-            WatchScaling(CartSeparationStrength);
-            WatchScaling(CartMaximumCorrectionDistance);
-            WatchScaling(CartClearCrushVelocity);
-            WatchScaling(CartTemporaryIgnoreSeconds);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);
@@ -363,17 +310,12 @@ namespace ShrinkCart
 
         internal static float SafeCartSeparationStrength()
         {
-            return Mathf.Clamp(CartSeparationStrength.Value, 0.1f, 5.0f);
+            return CartSeparationStrengthDefault;
         }
 
         internal static float SafeCartMaximumCorrectionDistance()
         {
-            return Mathf.Clamp(CartMaximumCorrectionDistance.Value, 0.05f, 1.0f);
-        }
-
-        internal static float SafeCartTemporaryIgnoreSeconds()
-        {
-            return Mathf.Clamp(CartTemporaryIgnoreSeconds.Value, 0.05f, 3.0f);
+            return CartMaximumCorrectionDistanceDefault;
         }
 
         internal static bool TryGetScaleFactor(ShrinkCategory category, out float factor)

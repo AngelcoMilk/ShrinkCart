@@ -8,7 +8,7 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC0218";
+        private const string PayloadVersion = "SC0219";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 14;
 
@@ -18,21 +18,15 @@ namespace ShrinkCart
             internal bool HideScaleFlash;
             internal bool ShrinkShopPlayerItems;
             internal bool ShrinkPlayers;
-            internal bool ExperimentalPlayerScaling;
             internal bool EnemyInCartInstantKill;
             internal bool PreserveCartMass;
             internal bool SuppressValuableDamageRestore;
-            internal bool PreventCartOverlap;
             internal float CartLeaveDebounceSeconds;
             internal float ReshrinkCooldownSeconds;
             internal float ScaleSpeed;
             internal float RestoreScaleSpeed;
             internal float PlayerCartScaleFactor;
             internal float PlayerCartStandTriggerSeconds;
-            internal bool PlayerAutoRestoreBeforeDeath;
-            internal float CartSeparationStrength;
-            internal float CartMaximumCorrectionDistance;
-            internal bool CartClearCrushVelocity;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
@@ -127,21 +121,15 @@ namespace ShrinkCart
             Append(ModConfig.HideScaleFlash.Value);
             Append(ModConfig.ShrinkShopPlayerItems.Value);
             Append(ModConfig.ShrinkPlayers.Value);
-            Append(ModConfig.ExperimentalPlayerScaling.Value);
             Append(ModConfig.EnemyInCartInstantKill.Value);
             Append(ModConfig.PreserveCartMass.Value);
             Append(ModConfig.SuppressValuableDamageRestore.Value);
-            Append(ModConfig.PreventCartOverlap.Value);
             Append(ModConfig.SafeCartLeaveDebounceSeconds());
             Append(ModConfig.SafeReshrinkCooldownSeconds());
             Append(ModConfig.SafeScaleSpeed());
             Append(ModConfig.SafeRestoreScaleSpeed());
             Append(ModConfig.SafePlayerCartScaleFactor());
             Append(ModConfig.SafePlayerCartStandTriggerSeconds());
-            Append(ModConfig.PlayerAutoRestoreBeforeDeath.Value);
-            Append(ModConfig.SafeCartSeparationStrength());
-            Append(ModConfig.SafeCartMaximumCorrectionDistance());
-            Append(ModConfig.CartClearCrushVelocity.Value);
 
             for (int i = 0; i < CategoryCount; i++)
             {
@@ -159,7 +147,7 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 20 + CategoryCount * 2;
+            int expected = 14 + CategoryCount * 2;
             if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
@@ -171,21 +159,15 @@ namespace ShrinkCart
                 !TryParseBool(parts[index++], out parsed.HideScaleFlash) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkShopPlayerItems) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkPlayers) ||
-                !TryParseBool(parts[index++], out parsed.ExperimentalPlayerScaling) ||
                 !TryParseBool(parts[index++], out parsed.EnemyInCartInstantKill) ||
                 !TryParseBool(parts[index++], out parsed.PreserveCartMass) ||
                 !TryParseBool(parts[index++], out parsed.SuppressValuableDamageRestore) ||
-                !TryParseBool(parts[index++], out parsed.PreventCartOverlap) ||
                 !TryParseFloat(parts[index++], out parsed.CartLeaveDebounceSeconds) ||
                 !TryParseFloat(parts[index++], out parsed.ReshrinkCooldownSeconds) ||
                 !TryParseFloat(parts[index++], out parsed.ScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.PlayerCartScaleFactor) ||
-                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds) ||
-                !TryParseBool(parts[index++], out parsed.PlayerAutoRestoreBeforeDeath) ||
-                !TryParseFloat(parts[index++], out parsed.CartSeparationStrength) ||
-                !TryParseFloat(parts[index++], out parsed.CartMaximumCorrectionDistance) ||
-                !TryParseBool(parts[index++], out parsed.CartClearCrushVelocity))
+                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds))
             {
                 return false;
             }
