@@ -1,4 +1,4 @@
-# ShrinkCart v0.2.19
+# ShrinkCart v0.2.20
 
 适配 R.E.P.O. 4.0 版本的物品缩小搬运车。
 
@@ -6,7 +6,7 @@
 Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
 GitHub / Source: https://github.com/AngelcoMilk/ShrinkCart
 
-ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、玩家站车缩放、车辆硬碰撞保护、主机同步，以及可选的敌人进车秒杀。
+ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、玩家站车缩放、车类载物过滤、主机同步，以及可选的敌人进车秒杀。
 
 ## 依赖
 
@@ -23,7 +23,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。mod 管理器的跳转按
 - **玩家缩放**：默认开启。玩家站在正式购物车中心区域一段时间会切换缩小/恢复；离开中心区域会重置计时。玩家死亡或复活前会自动恢复，避免死亡头颅流程冲突。
 - **代币/外观箱支持**：新版本抽奖/代币类箱子包含 `CosmeticWorldObject` 与 `ItemValuableBox`，会走“代币/外观箱”独立开关和倍率，默认倍率 `0.4`。
 - **特殊物品支持**：敌人球 Small/Medium/Big/Berserker 使用独立倍率；钱袋/Surplus 使用独立倍率；普通非贵重物默认不缩小。
-- **车辆硬碰撞保护**：大小推车、车辆、C.A.R.T. Cannon、C.A.R.T. Laser 永远不缩小，也不会进入另一辆车的车内列表、缩放队列、恢复队列或质量计算；车辆重叠保护现在作为内部固定保护开启，不再暴露调节项。
+- **原版车辆碰撞**：大小推车、车辆、C.A.R.T. Cannon、C.A.R.T. Laser 永远不缩小，也不会进入另一辆车的车内列表、缩放队列、恢复队列或质量计算；真实车对车碰撞交回原版物理机制处理。
 - **主机权威同步**：多人游戏中由主机配置决定缩放倍率、速度、特殊物品和恢复时机；客户端不会用自己的配置覆盖结果。
 - **隐藏缩放特效**：默认通过 ScalerCore 0.6.1 的官方选项隐藏购物车缩放闪光、冲击声和恢复镜头震动。
 
@@ -49,7 +49,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。mod 管理器的跳转按
 
 ### R.E.P.O. 4.0 特殊物品支持
 
-R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.19 保留了 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配。
+R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.20 保留了 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配。
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -65,18 +65,18 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.19 保留
 - 商店用品：商店用品缩小倍率。
 - 车辆碾压：车辆碾压秒杀玩家、敌人进车秒杀。
 
-默认值：缩小速度 `0.5`，放大速度 `0.2`，离车防抖 `0.5`，恢复冷却 `0.5`，启用商店用品缩小 `false`，启用玩家缩放 `true`，玩家缩放倍率 `0.55`，玩家站车触发时间 `2` 秒。车辆防重叠、车辆硬碰撞修正、车辆挤压速度清除和玩家死亡前自动恢复已经固定为内部保护，不再作为配置项显示。贵重物倍率：Tiny `0.8`，Small `0.6`，Medium `0.45`，Big `0.4`，Wide `0.35`，Tall `0.35`，VeryTall `0.25`。敌人球倍率：Small `0.8`，Medium `0.65`，Big `0.45`，Berserker `0.45`。商店用品倍率 `0.5`，钱袋/Surplus `0.25`，代币/外观箱 `0.4`。
+默认值：缩小速度 `0.5`，放大速度 `0.2`，离车防抖 `0.5`，恢复冷却 `0.5`，启用商店用品缩小 `false`，启用玩家缩放 `true`，玩家缩放倍率 `0.55`，玩家站车触发时间 `2` 秒。车辆载物过滤和玩家死亡前自动恢复已经固定为内部保护，不再作为配置项显示。贵重物倍率：Tiny `0.8`，Small `0.6`，Medium `0.45`，Big `0.4`，Wide `0.35`，Tall `0.35`，VeryTall `0.25`。敌人球倍率：Small `0.8`，Medium `0.65`，Big `0.45`，Berserker `0.45`。商店用品倍率 `0.5`，钱袋/Surplus `0.25`，代币/外观箱 `0.4`。
 
 ## 已知限制
 
 - 缩放动画由 ScalerCore 控制，ShrinkCart 不重写底层缩放系统。
-- 物理引擎无法保证任何一帧都绝不穿插；ShrinkCart 不会临时关闭车对车碰撞，目标是车辆不会被 ShrinkCart 保持在重叠、载物或缩放状态中，并在物理帧内硬修正穿透。
+- ShrinkCart 不再接管车对车物理碰撞，也不会使用穿透修正或速度钳制；车辆真实碰撞表现以原版为准。
 - 如果其他缩放类 mod 已经控制同一个对象，ShrinkCart 会尽量避免覆盖该对象。
 - 客户端未安装 ShrinkCart 时，仍可能看到 ScalerCore 默认闪光/声音；全员安装效果最稳定。
 
 ---
 
-# ShrinkCart v0.2.19
+# ShrinkCart v0.2.20
 
 A shrink-hauler cart for R.E.P.O. 4.0.
 
@@ -84,7 +84,7 @@ Author: **AngelcoMilk**
 Thunderstore: https://thunderstore.io/c/repo/p/AngelcoMilk/ShrinkCart/  
 GitHub / Source: https://github.com/AngelcoMilk/ShrinkCart
 
-ShrinkCart shrinks supported objects placed in carts, restores them after removal, keeps scaling host-authoritative through ScalerCore, supports default-enabled player cart scaling, and hard-corrects cart-vs-cart penetration without disabling cart collisions.
+ShrinkCart shrinks supported objects placed in carts, restores them after removal, keeps scaling host-authoritative through ScalerCore, supports default-enabled player cart scaling, and leaves real cart-vs-cart collision behavior to vanilla physics.
 
 ## Features
 
@@ -92,8 +92,8 @@ ShrinkCart shrinks supported objects placed in carts, restores them after remova
 - Token/cosmetic boxes include both `CosmeticWorldObject` and `ItemValuableBox`; default factor is `0.4`.
 - Shop utility items and weapons are excluded by default, but can be enabled with the shop item factor.
 - Player scaling is enabled by default: stand in the center area of a regular cart to toggle shrink/restore. ShrinkCart restores players before death or revive flows.
-- Carts, vehicles, C.A.R.T. Cannon, and C.A.R.T. Laser are never shrunk or tracked as cart contents; cart penetration is corrected in physics ticks without temporarily disabling cart collisions.
-- Vehicle overlap protection and player death restore are fixed internal safeguards, not exposed tuning options.
+- Carts, vehicles, C.A.R.T. Cannon, and C.A.R.T. Laser are never shrunk or tracked as cart contents.
+- Cart-vs-cart collision is handled by vanilla physics; ShrinkCart only prevents cart-like objects from being treated as cart payload.
 - All scale decisions are host-authoritative; clients do not override host scale settings.
 
 ## Dependencies

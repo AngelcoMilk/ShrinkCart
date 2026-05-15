@@ -32,15 +32,6 @@ namespace ShrinkCart
         }
     }
 
-    [HarmonyPatch(typeof(PhysGrabCart), "FixedUpdate")]
-    internal static class PhysGrabCartFixedUpdatePatch
-    {
-        private static void Postfix(PhysGrabCart __instance)
-        {
-            CartCollisionGuard.FixedTick(__instance);
-        }
-    }
-
     [HarmonyPatch(typeof(PhysGrabCart), "ObjectsInCart")]
     internal static class PhysGrabCartObjectsInCartPatch
     {

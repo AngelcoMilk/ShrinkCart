@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -7,32 +6,15 @@ namespace ShrinkCart
 {
     internal static class CartRegistry
     {
-        private const float PenetrationPadding = 0.03f;
-        private const float MaximumCartVelocity = 4.0f;
-
         private sealed class CartState
         {
             internal PhysGrabCart Cart;
-            internal PhysGrabObject CartObject;
-            internal Rigidbody Body;
-            internal readonly List<Collider> SolidColliders = new List<Collider>(16);
-        }
-
-        private struct PenetrationResult
-        {
-            internal Vector3 Direction;
-            internal float Distance;
-            internal bool HasHit;
         }
 
         private static readonly Dictionary<int, CartState> Carts =
             new Dictionary<int, CartState>();
 
         private static readonly List<int> RemoveCartIds = new List<int>(8);
-        private static readonly HashSet<int> FixedUpdateHandledCartIds = new HashSet<int>();
-        private static readonly HashSet<long> FixedStepResolvedPairs = new HashSet<long>();
-        private static int _lastFixedStepKey = -1;
-        private static int _lastPruneFixedStepKey = -1;
 
         private static readonly FieldInfo PhysGrabCartItemsInCartField =
             typeof(PhysGrabCart).GetField("itemsInCart", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -53,43 +35,12 @@ namespace ShrinkCart
                 return;
             }
 
-            CartState state = new CartState
+            Carts[cart.GetInstanceID()] = new CartState
             {
-                Cart = cart,
-                CartObject = cart.GetComponent<PhysGrabObject>(),
-                Body = cart.GetComponent<Rigidbody>()
+                Cart = cart
             };
-            RefreshColliders(state);
-            Carts[cart.GetInstanceID()] = state;
 
-            DebugLog("Registered cart guard target: " + cart.name);
-        }
-
-        internal static void FixedTick(PhysGrabCart cart)
-        {
-            if (cart == null || !IsHostOrSingleplayer())
-            {
-                return;
-            }
-
-            PrepareFixedStepPairCache();
-            PruneInvalidCartsOncePerFixedStep();
-            CartState state = GetOrCreateState(cart);
-            if (state == null)
-            {
-                return;
-            }
-
-            RemoveCartLikeItems(state);
-
-            int id = cart.GetInstanceID();
-            if (FixedUpdateHandledCartIds.Contains(id))
-            {
-                return;
-            }
-
-            FixedUpdateHandledCartIds.Add(id);
-            ResolveOverlapsFor(state);
+            DebugLog("Registered cart content guard target: " + cart.name);
         }
 
         internal static void CleanCartContents(PhysGrabCart cart)
@@ -102,10 +53,7 @@ namespace ShrinkCart
         {
             Carts.Clear();
             RemoveCartIds.Clear();
-            FixedUpdateHandledCartIds.Clear();
-            FixedStepResolvedPairs.Clear();
-            _lastFixedStepKey = -1;
-            _lastPruneFixedStepKey = -1;
+            CartObjectGuard.Reset();
         }
 
         internal static void HandleBlockedCartInCart(PhysGrabInCart destination, PhysGrabObject item)
@@ -121,29 +69,13 @@ namespace ShrinkCart
             }
 
             CartState destinationState = GetOrCreateState(destination.cart);
-            CartState itemState = FindCartState(item);
-            if (destinationState == null || itemState == null || destinationState == itemState)
+            if (destinationState == null)
             {
                 return;
             }
 
-            ResolveOverlap(destinationState, itemState);
-        }
-
-        private static readonly List<CartState> CartStatesScratch = new List<CartState>(16);
-
-        private static List<CartState> GetCartStatesScratch()
-        {
-            CartStatesScratch.Clear();
-            foreach (CartState state in Carts.Values)
-            {
-                if (state != null && state.Cart != null)
-                {
-                    CartStatesScratch.Add(state);
-                }
-            }
-
-            return CartStatesScratch;
+            RemoveCartLikeItems(destinationState);
+            DebugLog("Blocked cart-like object from cart Add: " + item.name);
         }
 
         private static CartState GetOrCreateState(PhysGrabCart cart)
@@ -163,52 +95,14 @@ namespace ShrinkCart
             return state;
         }
 
-        private static CartState FindCartState(PhysGrabObject item)
-        {
-            if (item == null)
-            {
-                return null;
-            }
-
-            PhysGrabCart cart = item.GetComponent<PhysGrabCart>();
-            if (cart == null)
-            {
-                cart = item.GetComponentInParent<PhysGrabCart>();
-            }
-
-            if (cart == null)
-            {
-                cart = item.GetComponentInChildren<PhysGrabCart>(true);
-            }
-
-            return GetOrCreateState(cart);
-        }
-
         private static void PruneInvalidCarts()
         {
             RemoveCartIds.Clear();
             foreach (KeyValuePair<int, CartState> pair in Carts)
             {
-                CartState state = pair.Value;
-                if (state == null || state.Cart == null)
+                if (pair.Value == null || pair.Value.Cart == null)
                 {
                     RemoveCartIds.Add(pair.Key);
-                    continue;
-                }
-
-                if (state.CartObject == null)
-                {
-                    state.CartObject = state.Cart.GetComponent<PhysGrabObject>();
-                }
-
-                if (state.Body == null)
-                {
-                    state.Body = state.Cart.GetComponent<Rigidbody>();
-                }
-
-                if (state.SolidColliders.Count == 0)
-                {
-                    RefreshColliders(state);
                 }
             }
 
@@ -220,20 +114,13 @@ namespace ShrinkCart
             RemoveCartIds.Clear();
         }
 
-        private static void PruneInvalidCartsOncePerFixedStep()
+        private static void RemoveCartLikeItems(CartState state)
         {
-            int key = _lastFixedStepKey;
-            if (key == _lastPruneFixedStepKey)
+            if (!IsHostOrSingleplayer())
             {
                 return;
             }
 
-            _lastPruneFixedStepKey = key;
-            PruneInvalidCarts();
-        }
-
-        private static void RemoveCartLikeItems(CartState state)
-        {
             List<PhysGrabObject> items = GetItemsInCart(state == null ? null : state.Cart);
             if (state == null || state.Cart == null || items == null)
             {
@@ -255,11 +142,6 @@ namespace ShrinkCart
                 {
                     items.RemoveAt(i);
                     changed = true;
-                    CartState other = FindCartState(item);
-                    if (other != null && other != state)
-                    {
-                        ResolveOverlap(state, other);
-                    }
                 }
             }
 
@@ -310,6 +192,11 @@ namespace ShrinkCart
             {
                 PhysGrabCartHaulCurrentField.SetValue(cart, haul);
             }
+
+            if (cart.valueScreen != null)
+            {
+                cart.valueScreen.UpdateValue(haul);
+            }
         }
 
         private static List<PhysGrabObject> GetItemsInCart(PhysGrabCart cart)
@@ -341,262 +228,6 @@ namespace ShrinkCart
             }
 
             return 0;
-        }
-
-        private static void ResolveOverlap(CartState a, CartState b)
-        {
-            if (a == null || b == null || a.Cart == null || b.Cart == null || a.Cart == b.Cart)
-            {
-                return;
-            }
-
-            PenetrationResult penetration = ComputeCartPenetration(a, b);
-            if (!penetration.HasHit)
-            {
-                return;
-            }
-
-            SeparateCarts(a, b, penetration.Direction, penetration.Distance);
-        }
-
-        private static void ResolveOverlapsFor(CartState state)
-        {
-            List<CartState> states = GetCartStatesScratch();
-            for (int i = 0; i < states.Count; i++)
-            {
-                CartState other = states[i];
-                if (other != null && other != state)
-                {
-                    ResolveOverlapOncePerFixedStep(state, other);
-                }
-            }
-
-            states.Clear();
-        }
-
-        private static void PrepareFixedStepPairCache()
-        {
-            int key = Mathf.RoundToInt(Time.fixedTime / Mathf.Max(Time.fixedDeltaTime, 0.0001f));
-            if (key == _lastFixedStepKey)
-            {
-                return;
-            }
-
-            _lastFixedStepKey = key;
-            FixedUpdateHandledCartIds.Clear();
-            FixedStepResolvedPairs.Clear();
-        }
-
-        private static void ResolveOverlapOncePerFixedStep(CartState a, CartState b)
-        {
-            if (a == null || b == null || a.Cart == null || b.Cart == null)
-            {
-                return;
-            }
-
-            int idA = a.Cart.GetInstanceID();
-            int idB = b.Cart.GetInstanceID();
-            int first = Mathf.Min(idA, idB);
-            int second = Mathf.Max(idA, idB);
-            long key = ((long)first << 32) ^ (uint)second;
-            if (FixedStepResolvedPairs.Contains(key))
-            {
-                return;
-            }
-
-            FixedStepResolvedPairs.Add(key);
-            ResolveOverlap(a, b);
-        }
-
-        private static PenetrationResult ComputeCartPenetration(CartState a, CartState b)
-        {
-            PenetrationResult best = new PenetrationResult();
-            EnsureColliders(a);
-            EnsureColliders(b);
-
-            for (int i = 0; i < a.SolidColliders.Count; i++)
-            {
-                Collider ca = a.SolidColliders[i];
-                if (ca == null || !ca.enabled)
-                {
-                    continue;
-                }
-
-                Bounds boundsA = ca.bounds;
-                for (int j = 0; j < b.SolidColliders.Count; j++)
-                {
-                    Collider cb = b.SolidColliders[j];
-                    if (cb == null || !cb.enabled)
-                    {
-                        continue;
-                    }
-
-                    if (!boundsA.Intersects(cb.bounds))
-                    {
-                        continue;
-                    }
-
-                    Vector3 direction;
-                    float distance;
-                    if (!Physics.ComputePenetration(
-                            ca,
-                            ca.transform.position,
-                            ca.transform.rotation,
-                            cb,
-                            cb.transform.position,
-                            cb.transform.rotation,
-                            out direction,
-                            out distance))
-                    {
-                        continue;
-                    }
-
-                    direction.y = 0.0f;
-                    if (direction.sqrMagnitude < 0.0001f)
-                    {
-                        direction = a.Cart.transform.position - b.Cart.transform.position;
-                        direction.y = 0.0f;
-                    }
-
-                    if (direction.sqrMagnitude < 0.0001f)
-                    {
-                        direction = a.Cart.transform.right;
-                        direction.y = 0.0f;
-                    }
-
-                    if (distance > best.Distance)
-                    {
-                        best.Direction = direction.normalized;
-                        best.Distance = distance;
-                        best.HasHit = true;
-                    }
-                }
-            }
-
-            return best;
-        }
-
-        private static void SeparateCarts(CartState a, CartState b, Vector3 direction, float distance)
-        {
-            Rigidbody rbA = a.Body;
-            Rigidbody rbB = b.Body;
-            if (rbA == null && rbB == null)
-            {
-                return;
-            }
-
-            if (direction.sqrMagnitude < 0.0001f)
-            {
-                return;
-            }
-
-            float strength = ModConfig.SafeCartSeparationStrength();
-            float step = Mathf.Clamp((distance + PenetrationPadding) * strength, 0.0f, ModConfig.SafeCartMaximumCorrectionDistance());
-            Vector3 move = direction.normalized * step;
-
-            bool canMoveA = rbA != null && !rbA.isKinematic;
-            bool canMoveB = rbB != null && !rbB.isKinematic;
-            if (canMoveA && canMoveB)
-            {
-                MoveCart(rbA, move * 0.5f);
-                MoveCart(rbB, -move * 0.5f);
-            }
-            else if (canMoveA)
-            {
-                MoveCart(rbA, move);
-            }
-            else if (canMoveB)
-            {
-                MoveCart(rbB, -move);
-            }
-
-            RemoveClosingVelocity(rbA, direction);
-            RemoveClosingVelocity(rbB, -direction);
-
-            ClampVelocity(rbA);
-            ClampVelocity(rbB);
-
-            DebugLog(
-                "Corrected cart penetration: " +
-                a.Cart.name +
-                " <-> " +
-                b.Cart.name +
-                " depth=" +
-                distance.ToString("0.###"));
-        }
-
-        private static void MoveCart(Rigidbody body, Vector3 delta)
-        {
-            if (body == null || body.isKinematic)
-            {
-                return;
-            }
-
-            body.MovePosition(body.position + delta);
-        }
-
-        private static void RemoveClosingVelocity(Rigidbody body, Vector3 outwardDirection)
-        {
-            if (body == null || body.isKinematic || outwardDirection.sqrMagnitude < 0.0001f)
-            {
-                return;
-            }
-
-            Vector3 normal = outwardDirection.normalized;
-            float inwardSpeed = Vector3.Dot(body.velocity, -normal);
-            if (inwardSpeed > 0.0f)
-            {
-                body.velocity += normal * inwardSpeed;
-            }
-        }
-
-        private static void ClampVelocity(Rigidbody body)
-        {
-            if (body == null)
-            {
-                return;
-            }
-
-            Vector3 velocity = body.velocity;
-            Vector3 horizontal = new Vector3(velocity.x, 0.0f, velocity.z);
-            if (horizontal.magnitude > MaximumCartVelocity)
-            {
-                horizontal = horizontal.normalized * MaximumCartVelocity;
-                body.velocity = new Vector3(horizontal.x, Mathf.Min(velocity.y, MaximumCartVelocity), horizontal.z);
-            }
-
-            Vector3 angular = body.angularVelocity;
-            if (angular.magnitude > MaximumCartVelocity)
-            {
-                body.angularVelocity = angular.normalized * MaximumCartVelocity;
-            }
-        }
-
-        private static void EnsureColliders(CartState state)
-        {
-            if (state != null && state.SolidColliders.Count == 0)
-            {
-                RefreshColliders(state);
-            }
-        }
-
-        private static void RefreshColliders(CartState state)
-        {
-            if (state == null || state.Cart == null)
-            {
-                return;
-            }
-
-            state.SolidColliders.Clear();
-            Collider[] colliders = state.Cart.GetComponentsInChildren<Collider>(true);
-            for (int i = 0; i < colliders.Length; i++)
-            {
-                Collider collider = colliders[i];
-                if (collider != null && !collider.isTrigger)
-                {
-                    state.SolidColliders.Add(collider);
-                }
-            }
         }
 
         private static void DebugLog(string message)

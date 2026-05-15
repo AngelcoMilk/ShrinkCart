@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.19"
+$modVersion = "0.2.20"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -117,7 +117,6 @@ function Test-GameHookTargets {
     $targets = @(
         @{ Type = "PhysGrabInCart"; Method = "Add"; Parameters = @("PhysGrabObject") },
         @{ Type = "PhysGrabCart"; Method = "Start"; Parameters = @() },
-        @{ Type = "PhysGrabCart"; Method = "FixedUpdate"; Parameters = @() },
         @{ Type = "PhysGrabCart"; Method = "ObjectsInCart"; Parameters = @() },
         @{ Type = "CosmeticWorldObject"; Method = "Start"; Parameters = @() },
         @{ Type = "PhysGrabObject"; Method = "Start"; Parameters = @() },
@@ -150,10 +149,7 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabCart"; Field = "itemsInCart" },
         @{ Type = "PhysGrabCart"; Field = "itemsInCartCount" },
         @{ Type = "PhysGrabCart"; Field = "haulCurrent" },
-        @{ Type = "PhysGrabCart"; Field = "cartInside" },
-        @{ Type = "PhysGrabCart"; Field = "capsuleColliders" },
-        @{ Type = "PhysGrabCart"; Field = "rb" },
-        @{ Type = "PhysGrabCart"; Field = "actualVelocity" },
+        @{ Type = "PhysGrabCart"; Field = "valueScreen" },
         @{ Type = "PlayerHealth"; Field = "playerAvatar" },
         @{ Type = "PlayerDeathHead"; Field = "playerAvatar" },
         @{ Type = "PlayerAvatar"; Field = "physObjectStander" },
@@ -297,43 +293,7 @@ function Test-ScalerCoreHookTargets {
     Write-Host "Validated ScalerCore hook targets against $AssemblyPath"
 }
 
-function Test-UnityPhysicsTargets {
-    param(
-        [string]$AssemblyPath,
-        [string]$CecilPath
-    )
-
-    if (!(Test-Path $CecilPath)) {
-        Write-Warning "Mono.Cecil.dll not found; skipping Unity physics target validation."
-        return
-    }
-
-    $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
-    $physicsType = $assembly.MainModule.Types | Where-Object { $_.FullName -eq "UnityEngine.Physics" } | Select-Object -First 1
-    if ($null -eq $physicsType) {
-        throw "Unity physics target validation failed: missing UnityEngine.Physics"
-    }
-
-    $method = $physicsType.Methods | Where-Object {
-        $_.Name -eq "ComputePenetration" -and
-        $_.Parameters.Count -eq 8 -and
-        $_.Parameters[0].ParameterType.FullName -eq "UnityEngine.Collider" -and
-        $_.Parameters[2].ParameterType.FullName -eq "UnityEngine.Quaternion" -and
-        $_.Parameters[3].ParameterType.FullName -eq "UnityEngine.Collider" -and
-        $_.Parameters[5].ParameterType.FullName -eq "UnityEngine.Quaternion" -and
-        $_.Parameters[6].ParameterType.FullName -eq "UnityEngine.Vector3&" -and
-        $_.Parameters[7].ParameterType.FullName -eq "System.Single&"
-    } | Select-Object -First 1
-
-    if ($null -eq $method) {
-        throw "Unity physics target validation failed: missing UnityEngine.Physics.ComputePenetration"
-    }
-
-    Write-Host "Validated Unity physics targets against $AssemblyPath"
-}
-
 Test-GameHookTargets -AssemblyPath (Join-Path $managed "Assembly-CSharp.dll") -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
-Test-UnityPhysicsTargets -AssemblyPath (Join-Path $managed "UnityEngine.PhysicsModule.dll") -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
 Test-ScalerCoreHookTargets -AssemblyPath $ScalerCoreDll -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
 
 & $csc /nologo /codepage:65001 /target:library /optimize+ /debug:full /nowarn:1701 /out:$pluginOut $refArgs $sources

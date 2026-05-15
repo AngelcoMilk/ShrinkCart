@@ -7,6 +7,7 @@ namespace ShrinkCart
     internal static class CartObjectGuard
     {
         private static readonly HashSet<int> CartLikeObjectIds = new HashSet<int>();
+        private static readonly HashSet<int> NonCartLikeObjectIds = new HashSet<int>();
 
         private static readonly FieldInfo ItemAttributesItemTypeField =
             typeof(ItemAttributes).GetField("itemType", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -24,13 +25,25 @@ namespace ShrinkCart
                 return true;
             }
 
+            if (NonCartLikeObjectIds.Contains(id))
+            {
+                return false;
+            }
+
             if (HasCartLikeComponent(item) || HasCartLikeItemType(item))
             {
                 CartLikeObjectIds.Add(id);
                 return true;
             }
 
+            NonCartLikeObjectIds.Add(id);
             return false;
+        }
+
+        internal static void Reset()
+        {
+            CartLikeObjectIds.Clear();
+            NonCartLikeObjectIds.Clear();
         }
 
         internal static bool ShouldBlockCartInCart(PhysGrabInCart destination, PhysGrabObject item)
@@ -94,16 +107,6 @@ namespace ShrinkCart
         internal static void HandleBlockedCartInCart(PhysGrabInCart destination, PhysGrabObject item)
         {
             CartRegistry.HandleBlockedCartInCart(destination, item);
-        }
-
-        internal static void Tick()
-        {
-            CartRegistry.Tick();
-        }
-
-        internal static void FixedTick(PhysGrabCart cart)
-        {
-            CartRegistry.FixedTick(cart);
         }
 
         internal static void CleanCartContents(PhysGrabCart cart)
