@@ -107,21 +107,4 @@ namespace ShrinkCart
         }
     }
 
-    [HarmonyPatch(typeof(PlayerAvatar), "Revive")]
-    internal static class PlayerAvatarRevivePatch
-    {
-        private static void Prefix(PlayerAvatar __instance)
-        {
-            PlayerScaleDeathSafety.ClearBeforeRevive(__instance, "Revive");
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerAvatar), "ReviveRPC")]
-    internal static class PlayerAvatarReviveRpcPatch
-    {
-        private static void Prefix(PlayerAvatar __instance)
-        {
-            PlayerScaleDeathSafety.ClearBeforeRevive(__instance, "ReviveRPC");
-        }
-    }
 }

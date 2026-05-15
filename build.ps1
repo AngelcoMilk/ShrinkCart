@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.20"
+$modVersion = "0.2.22"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -127,8 +127,6 @@ function Test-GameHookTargets {
         @{ Type = "PlayerAvatar"; Method = "PlayerDeath"; Parameters = @("System.Int32") },
         @{ Type = "PlayerAvatar"; Method = "PlayerDeathRPC"; Parameters = @("System.Int32", "Photon.Pun.PhotonMessageInfo") },
         @{ Type = "PlayerDeathHead"; Method = "Trigger"; Parameters = @() },
-        @{ Type = "PlayerAvatar"; Method = "Revive"; Parameters = @("System.Boolean") },
-        @{ Type = "PlayerAvatar"; Method = "ReviveRPC"; Parameters = @("System.Boolean", "Photon.Pun.PhotonMessageInfo") },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
@@ -223,7 +221,6 @@ function Test-ScalerCoreHookTargets {
         @{ Type = "ScalerCore.ScaleManager"; Method = "ApplyIfNotScaled"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "Restore"; Parameters = @("UnityEngine.GameObject") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "ForceRestore"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "CleanupAll"; Parameters = @() },
         @{ Type = "ScalerCore.ScaleManager"; Method = "UpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "ForceUpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },

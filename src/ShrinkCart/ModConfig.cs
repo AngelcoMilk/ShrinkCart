@@ -31,9 +31,12 @@ namespace ShrinkCart
         internal static ConfigEntry<float> ReshrinkCooldownSeconds;
         internal static ConfigEntry<bool> PreserveCartMass;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
+        internal static ConfigEntry<bool> PlayerScalingModuleEnabled;
         internal static ConfigEntry<bool> ShrinkPlayers;
         internal static ConfigEntry<float> PlayerCartScaleFactor;
         internal static ConfigEntry<float> PlayerCartStandTriggerSeconds;
+        internal static ConfigEntry<float> PlayerCartExitGraceSeconds;
+        internal static ConfigEntry<bool> RestorePlayerOnDamage;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
         internal static ConfigEntry<bool> HideScaleFlash;
 
@@ -117,23 +120,41 @@ namespace ShrinkCart
                 false,
                 "启用后，枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品会使用默认缩小倍率。大小推车、C.A.R.T. Cannon 和 C.A.R.T. Laser 始终不会缩小。");
 
-            ShrinkPlayers = config.Bind(
-                "购物车",
+            PlayerScalingModuleEnabled = config.Bind(
+                "玩家缩放",
                 "启用玩家缩放",
-                true,
-                "启用后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复。玩家死亡或复活前会自动恢复，以避免死亡头颅流程冲突。此开关不影响枪、血包、工具等商店用品。");
+                false,
+                "默认关闭。启用后才会运行玩家站车检测、玩家缩放和玩家死亡前恢复保护；关闭时 ShrinkCart 不参与任何玩家相关逻辑。");
+
+            ShrinkPlayers = config.Bind(
+                "玩家缩放",
+                "旧版玩家缩放开关（已停用）",
+                false,
+                "旧版兼容项，当前版本不再读取。请使用同一分组里的“启用玩家缩放”总开关。");
 
             PlayerCartScaleFactor = config.Bind(
-                "购物车",
+                "玩家缩放",
                 "玩家进车缩放倍率",
                 0.55f,
                 Ranged("开启“启用玩家缩放”后，玩家站在购物车中心区域触发缩放时的目标尺寸比例。", 0.05f, 1.0f));
 
             PlayerCartStandTriggerSeconds = config.Bind(
-                "购物车",
+                "玩家缩放",
                 "玩家站车触发时间",
                 2.0f,
                 Ranged("开启“启用玩家缩放”后，玩家站在购物车中心区域多久才切换缩小/恢复。离开中心区域会重置计时。", 0.25f, 10.0f));
+
+            PlayerCartExitGraceSeconds = config.Bind(
+                "玩家缩放",
+                "玩家离车判定宽容时间",
+                0.6f,
+                Ranged("玩家仍在购物车中心区域附近但短暂跳起、踩到车内物品或被货物顶起时，保留车内状态多久后才判定离开。设为 0 可恢复严格判定。", 0.0f, 2.0f));
+
+            RestorePlayerOnDamage = config.Bind(
+                "玩家缩放",
+                "启用玩家受伤后自动恢复",
+                true,
+                "启用后，玩家缩小时使用 ScalerCore 的受伤/碰撞恢复链路；关闭后，玩家只会通过再次站车切换恢复。");
 
             SuppressValuableDamageRestore = config.Bind(
                 "购物车",
@@ -247,9 +268,12 @@ namespace ShrinkCart
             WatchScaling(ReshrinkCooldownSeconds);
             WatchScaling(PreserveCartMass);
             WatchScaling(ShrinkShopPlayerItems);
+            WatchScaling(PlayerScalingModuleEnabled);
             WatchScaling(ShrinkPlayers);
             WatchScaling(PlayerCartScaleFactor);
             WatchScaling(PlayerCartStandTriggerSeconds);
+            WatchScaling(PlayerCartExitGraceSeconds);
+            WatchScaling(RestorePlayerOnDamage);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
             WatchScaling(TinyScaleFactor);
@@ -298,6 +322,14 @@ namespace ShrinkCart
             return Mathf.Clamp(ReshrinkCooldownSeconds.Value, 0.05f, 10.0f);
         }
 
+        internal static bool PlayerScalingEnabled()
+        {
+            return CartShrinkingEnabled != null &&
+                   PlayerScalingModuleEnabled != null &&
+                   CartShrinkingEnabled.Value &&
+                   PlayerScalingModuleEnabled.Value;
+        }
+
         internal static float SafePlayerCartScaleFactor()
         {
             return Mathf.Clamp(PlayerCartScaleFactor.Value, 0.05f, 1.0f);
@@ -306,6 +338,11 @@ namespace ShrinkCart
         internal static float SafePlayerCartStandTriggerSeconds()
         {
             return Mathf.Clamp(PlayerCartStandTriggerSeconds.Value, 0.25f, 10.0f);
+        }
+
+        internal static float SafePlayerCartExitGraceSeconds()
+        {
+            return Mathf.Clamp(PlayerCartExitGraceSeconds.Value, 0.0f, 2.0f);
         }
 
         internal static float SafeCartSeparationStrength()

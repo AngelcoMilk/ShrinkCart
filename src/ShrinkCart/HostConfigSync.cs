@@ -8,7 +8,7 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC0219";
+        private const string PayloadVersion = "SC0222";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 14;
 
@@ -17,7 +17,9 @@ namespace ShrinkCart
             internal bool CartEnabled;
             internal bool HideScaleFlash;
             internal bool ShrinkShopPlayerItems;
+            internal bool PlayerScalingModuleEnabled;
             internal bool ShrinkPlayers;
+            internal bool RestorePlayerOnDamage;
             internal bool EnemyInCartInstantKill;
             internal bool PreserveCartMass;
             internal bool SuppressValuableDamageRestore;
@@ -27,6 +29,7 @@ namespace ShrinkCart
             internal float RestoreScaleSpeed;
             internal float PlayerCartScaleFactor;
             internal float PlayerCartStandTriggerSeconds;
+            internal float PlayerCartExitGraceSeconds;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
@@ -120,7 +123,9 @@ namespace ShrinkCart
             Append(ModConfig.CartShrinkingEnabled.Value);
             Append(ModConfig.HideScaleFlash.Value);
             Append(ModConfig.ShrinkShopPlayerItems.Value);
+            Append(ModConfig.PlayerScalingModuleEnabled.Value);
             Append(ModConfig.ShrinkPlayers.Value);
+            Append(ModConfig.RestorePlayerOnDamage.Value);
             Append(ModConfig.EnemyInCartInstantKill.Value);
             Append(ModConfig.PreserveCartMass.Value);
             Append(ModConfig.SuppressValuableDamageRestore.Value);
@@ -130,6 +135,7 @@ namespace ShrinkCart
             Append(ModConfig.SafeRestoreScaleSpeed());
             Append(ModConfig.SafePlayerCartScaleFactor());
             Append(ModConfig.SafePlayerCartStandTriggerSeconds());
+            Append(ModConfig.SafePlayerCartExitGraceSeconds());
 
             for (int i = 0; i < CategoryCount; i++)
             {
@@ -147,7 +153,7 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 14 + CategoryCount * 2;
+            int expected = 17 + CategoryCount * 2;
             if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
@@ -158,7 +164,9 @@ namespace ShrinkCart
             if (!TryParseBool(parts[index++], out parsed.CartEnabled) ||
                 !TryParseBool(parts[index++], out parsed.HideScaleFlash) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkShopPlayerItems) ||
+                !TryParseBool(parts[index++], out parsed.PlayerScalingModuleEnabled) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkPlayers) ||
+                !TryParseBool(parts[index++], out parsed.RestorePlayerOnDamage) ||
                 !TryParseBool(parts[index++], out parsed.EnemyInCartInstantKill) ||
                 !TryParseBool(parts[index++], out parsed.PreserveCartMass) ||
                 !TryParseBool(parts[index++], out parsed.SuppressValuableDamageRestore) ||
@@ -167,7 +175,8 @@ namespace ShrinkCart
                 !TryParseFloat(parts[index++], out parsed.ScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.PlayerCartScaleFactor) ||
-                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds))
+                !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds) ||
+                !TryParseFloat(parts[index++], out parsed.PlayerCartExitGraceSeconds))
             {
                 return false;
             }

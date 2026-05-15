@@ -124,9 +124,16 @@ namespace ShrinkCart
             foreach (KeyValuePair<int, TrackedObject> pair in TrackedObjects)
             {
                 TrackedObject tracked = pair.Value;
+                bool isEquipped = tracked.Target != null && IsTrackedEquipped(tracked.Target);
                 if (tracked.Target == null ||
+                    isEquipped ||
                     (now - tracked.LastSeenInCartTime >= leaveDebounce && now >= tracked.EarliestRestoreTime))
                 {
+                    if (isEquipped)
+                    {
+                        DebugLog("Restoring tracked equippable before equipped use: " + tracked.Target.name);
+                    }
+
                     RestoreIds.Add(pair.Key);
                 }
             }
@@ -296,6 +303,17 @@ namespace ShrinkCart
             options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
             options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
             ScaleManager.UpdateOptions(target, options);
+        }
+
+        private static bool IsTrackedEquipped(GameObject target)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            ItemEquippable equippable = target.GetComponent<ItemEquippable>();
+            return equippable != null && equippable.IsEquipped();
         }
 
         private static bool TryGetShrinkData(PhysGrabObject item, out ShrinkCategory category, out float factor)

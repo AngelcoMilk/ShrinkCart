@@ -22,13 +22,13 @@ namespace ShrinkCart
             internal bool WasInTriggerZone;
             internal bool TriggeredThisStay;
             internal float TriggerZoneEnteredTime;
+            internal float LastInsideCenterTime;
         }
 
         private sealed class CartState
         {
             internal PhysGrabCart Cart;
             internal Transform InCart;
-            internal PhysGrabObject CartObject;
         }
 
         private static readonly Dictionary<int, CartState> RegisteredCarts =
@@ -44,12 +44,6 @@ namespace ShrinkCart
 
         private static readonly FieldInfo PhysGrabCartInCartField =
             typeof(PhysGrabCart).GetField("inCart", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        private static readonly FieldInfo PhysGrabCartPhysGrabObjectField =
-            typeof(PhysGrabCart).GetField("physGrabObject", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        private static readonly FieldInfo PlayerPhysObjectStanderObjectsField =
-            typeof(PlayerPhysObjectStander).GetField("physGrabObjects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         private static readonly FieldInfo PlayerAvatarColliderField =
             typeof(PlayerAvatar).GetField("collider", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -81,8 +75,7 @@ namespace ShrinkCart
             RegisteredCarts[cart.GetInstanceID()] = new CartState
             {
                 Cart = cart,
-                InCart = GetInCartTransform(cart),
-                CartObject = GetCartPhysGrabObject(cart)
+                InCart = GetInCartTransform(cart)
             };
 
             DebugLog("Registered regular cart for player stand-toggle: " + cart.name);
@@ -103,7 +96,7 @@ namespace ShrinkCart
 
             _nextTickTime = now + TickIntervalSeconds;
 
-            if (!ModConfig.CartShrinkingEnabled.Value || !ModConfig.ShrinkPlayers.Value)
+            if (!ModConfig.PlayerScalingEnabled())
             {
                 RestoreAll();
                 return;
@@ -148,6 +141,13 @@ namespace ShrinkCart
             PlayerScaleDeathSafety.ClearActive();
         }
 
+        internal static void Disable()
+        {
+            RestoreAll();
+            PlayerStates.Clear();
+            PlayerScaleDeathSafety.ClearActive();
+        }
+
         internal static bool RestoreIfShrinkCartScaled(PlayerAvatar player, string reason)
         {
             if (player == null || player.gameObject == null)
@@ -167,8 +167,9 @@ namespace ShrinkCart
             state.WasInTriggerZone = false;
             state.TriggeredThisStay = false;
             state.TriggerZoneEnteredTime = 0.0f;
+            state.LastInsideCenterTime = 0.0f;
             PlayerScaleDeathSafety.UnmarkActive(player);
-            DebugLog("Restored ShrinkCart-scaled player before death/revive: " + player.name + " reason=" + reason);
+            DebugLog("Restored ShrinkCart-scaled player before death: " + player.name + " reason=" + reason);
             return restored;
         }
 
@@ -211,7 +212,18 @@ namespace ShrinkCart
                 PlayerScaleDeathSafety.UnmarkActive(player);
             }
 
-            bool inTriggerZone = IsPlayerStandingInAnyCart(player);
+            bool inCenterZone = IsPlayerInsideAnyCartCenter(player);
+            bool inTriggerZone = inCenterZone;
+            if (inCenterZone)
+            {
+                state.LastInsideCenterTime = now;
+            }
+            else if (state.WasInTriggerZone &&
+                     now - state.LastInsideCenterTime <= ModConfig.SafePlayerCartExitGraceSeconds())
+            {
+                inTriggerZone = true;
+            }
+
             if (!inTriggerZone)
             {
                 if (state.WasInTriggerZone)
@@ -222,6 +234,7 @@ namespace ShrinkCart
                 state.WasInTriggerZone = false;
                 state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = 0.0f;
+                state.LastInsideCenterTime = 0.0f;
                 return;
             }
 
@@ -230,6 +243,7 @@ namespace ShrinkCart
                 state.WasInTriggerZone = true;
                 state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = now;
+                state.LastInsideCenterTime = now;
                 DebugLog("Player entered cart center stand zone: " + player.name);
                 return;
             }
@@ -284,7 +298,7 @@ namespace ShrinkCart
             options.AllowedTargets = ScaleTargets.Players;
             options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
             options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
-            options.IgnoreBonkExpand = false;
+            options.IgnoreBonkExpand = ModConfig.RestorePlayerOnDamage != null && !ModConfig.RestorePlayerOnDamage.Value;
             options.RejectExternalApply = false;
 
             try
@@ -338,11 +352,11 @@ namespace ShrinkCart
             }
         }
 
-        private static bool IsPlayerStandingInAnyCart(PlayerAvatar player)
+        private static bool IsPlayerInsideAnyCartCenter(PlayerAvatar player)
         {
             foreach (CartState cartState in RegisteredCarts.Values)
             {
-                if (cartState != null && IsPlayerStandingInCartCenter(player, cartState))
+                if (cartState != null && IsPlayerInsideCartCenter(player, cartState))
                 {
                     return true;
                 }
@@ -351,7 +365,7 @@ namespace ShrinkCart
             return false;
         }
 
-        private static bool IsPlayerStandingInCartCenter(PlayerAvatar player, CartState cartState)
+        private static bool IsPlayerInsideCartCenter(PlayerAvatar player, CartState cartState)
         {
             Transform inCart = cartState.InCart;
             if (inCart == null && cartState.Cart != null)
@@ -360,19 +374,7 @@ namespace ShrinkCart
                 cartState.InCart = inCart;
             }
 
-            PhysGrabObject cartObject = cartState.CartObject;
-            if (cartObject == null && cartState.Cart != null)
-            {
-                cartObject = GetCartPhysGrabObject(cartState.Cart);
-                cartState.CartObject = cartObject;
-            }
-
-            if (player == null || inCart == null || cartObject == null)
-            {
-                return false;
-            }
-
-            if (!IsPlayerStandingOnCartObject(player, cartObject))
+            if (player == null || inCart == null)
             {
                 return false;
             }
@@ -444,44 +446,6 @@ namespace ShrinkCart
                 ExcludedCartIds.Add(id);
                 DebugLog("Excluded small cart from player stand-toggle: " + cart.name);
                 return true;
-            }
-
-            return false;
-        }
-
-        private static PhysGrabObject GetCartPhysGrabObject(PhysGrabCart cart)
-        {
-            if (cart == null || PhysGrabCartPhysGrabObjectField == null)
-            {
-                return null;
-            }
-
-            return PhysGrabCartPhysGrabObjectField.GetValue(cart) as PhysGrabObject;
-        }
-
-        private static bool IsPlayerStandingOnCartObject(PlayerAvatar player, PhysGrabObject cartObject)
-        {
-            if (player == null ||
-                player.physObjectStander == null ||
-                cartObject == null ||
-                PlayerPhysObjectStanderObjectsField == null)
-            {
-                return false;
-            }
-
-            List<PhysGrabObject> standingObjects =
-                PlayerPhysObjectStanderObjectsField.GetValue(player.physObjectStander) as List<PhysGrabObject>;
-            if (standingObjects == null || standingObjects.Count == 0)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < standingObjects.Count; i++)
-            {
-                if (standingObjects[i] == cartObject)
-                {
-                    return true;
-                }
             }
 
             return false;
