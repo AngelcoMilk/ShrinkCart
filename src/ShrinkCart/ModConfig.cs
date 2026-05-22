@@ -29,16 +29,15 @@ namespace ShrinkCart
         internal static ConfigEntry<float> RestoreScaleSpeed;
         internal static ConfigEntry<float> CartLeaveDebounceSeconds;
         internal static ConfigEntry<float> ReshrinkCooldownSeconds;
-        internal static ConfigEntry<bool> PreserveCartMass;
+        internal static ConfigEntry<bool> ScaleMassWithSize;
         internal static ConfigEntry<bool> ShrinkShopPlayerItems;
         internal static ConfigEntry<bool> PlayerScalingModuleEnabled;
-        internal static ConfigEntry<bool> ShrinkPlayers;
         internal static ConfigEntry<float> PlayerCartScaleFactor;
         internal static ConfigEntry<float> PlayerCartStandTriggerSeconds;
         internal static ConfigEntry<float> PlayerCartExitGraceSeconds;
+        internal static ConfigEntry<float> PlayerCartDetectionIntervalSeconds;
         internal static ConfigEntry<bool> RestorePlayerOnDamage;
         internal static ConfigEntry<bool> SuppressValuableDamageRestore;
-        internal static ConfigEntry<bool> HideScaleFlash;
 
         internal static ConfigEntry<bool> TinyEnabled;
         internal static ConfigEntry<float> TinyScaleFactor;
@@ -67,14 +66,13 @@ namespace ShrinkCart
         internal static ConfigEntry<float> ValuableBoxScaleFactor;
         internal static ConfigEntry<float> FallbackScaleFactor;
 
-        internal static ConfigEntry<bool> VehicleCrushInstantKill;
         internal static ConfigEntry<bool> EnemyInCartInstantKill;
+        internal static ConfigEntry<bool> DynamicItemScanEnabled;
+        internal static ConfigEntry<float> MinimumItemScanIntervalSeconds;
+        internal static ConfigEntry<float> MaximumItemScanIntervalSeconds;
         internal static ConfigEntry<bool> DebugLogging;
 
         internal static int ScalingConfigVersion;
-
-        private const float CartSeparationStrengthDefault = 1.0f;
-        private const float CartMaximumCorrectionDistanceDefault = 0.35f;
 
         internal static void Bind(ConfigFile config)
         {
@@ -108,11 +106,11 @@ namespace ShrinkCart
                 LegacyFloat(config, 0.5f, "购物车", "取出后恢复延迟", "Cart", "RestoreGraceSeconds"),
                 Ranged("物品开始恢复后，等待多少秒才允许再次被购物车缩小。", 0.05f, 10.0f));
 
-            PreserveCartMass = config.Bind(
+            ScaleMassWithSize = config.Bind(
                 "购物车",
-                "保持原始重量",
-                true,
-                "启用后只改变视觉尺寸，不降低物品重量，避免购物车承重过于取巧。");
+                "启用重量随缩放降低",
+                !LegacyBool(config, true, "购物车", "保持原始重量", "Cart", "PreserveMass"),
+                "启用后通过 ScalerCore 的 PreserveMass 选项允许支持对象按缩放倍率降低质量；关闭则只改变视觉尺寸并保持原始重量。");
 
             ShrinkShopPlayerItems = config.Bind(
                 "购物车",
@@ -123,14 +121,8 @@ namespace ShrinkCart
             PlayerScalingModuleEnabled = config.Bind(
                 "玩家缩放",
                 "启用玩家缩放",
-                false,
-                "默认关闭。启用后才会运行玩家站车检测、玩家缩放和玩家死亡前恢复保护；关闭时 ShrinkCart 不参与任何玩家相关逻辑。");
-
-            ShrinkPlayers = config.Bind(
-                "玩家缩放",
-                "旧版玩家缩放开关（已停用）",
-                false,
-                "旧版兼容项，当前版本不再读取。请使用同一分组里的“启用玩家缩放”总开关。");
+                true,
+                "默认开启。启用后才会运行玩家站车检测和玩家缩放；关闭时 ShrinkCart 不参与任何玩家缩放逻辑。");
 
             PlayerCartScaleFactor = config.Bind(
                 "玩家缩放",
@@ -150,6 +142,12 @@ namespace ShrinkCart
                 0.6f,
                 Ranged("玩家仍在购物车中心区域附近但短暂跳起、踩到车内物品或被货物顶起时，保留车内状态多久后才判定离开。设为 0 可恢复严格判定。", 0.0f, 2.0f));
 
+            PlayerCartDetectionIntervalSeconds = config.Bind(
+                "玩家缩放",
+                "玩家检测间隔",
+                0.75f,
+                Ranged("玩家缩放开启时，主机多久检测一次玩家是否位于正式购物车底面投影范围内。数值越大越省性能，也越能防误触发。", 0.25f, 2.0f));
+
             RestorePlayerOnDamage = config.Bind(
                 "玩家缩放",
                 "启用玩家受伤后自动恢复",
@@ -161,12 +159,6 @@ namespace ShrinkCart
                 "防止碰撞弹回原尺寸",
                 true,
                 "启用后，贵重物品在购物车里轻微碰撞时不会立刻弹回原尺寸。ScalerCore 的安全恢复仍会保留。");
-
-            HideScaleFlash = config.Bind(
-                "视觉",
-                "隐藏缩放闪光",
-                true,
-                "启用后，隐藏 ShrinkCart 购物车缩小和恢复时由 ScalerCore 触发的冲击闪光。不会关闭普通碰撞特效。");
 
             TinyEnabled = BindCategoryEnabled(config, "Tiny 微型贵重物", true);
             TinyScaleFactor = BindCategoryFactor(config, "Tiny 微型贵重物", 0.8f);
@@ -243,17 +235,29 @@ namespace ShrinkCart
                 LegacyFloat(config, 0.5f, "普通或未知物品", "默认缩小倍率"),
                 Ranged("开启“启用商店用品缩小”后，枪、血包、工具等实用品放入购物车后的目标尺寸比例。也作为未知贵重物分类的兜底倍率。", 0.05f, 1.0f));
 
-            VehicleCrushInstantKill = config.Bind(
-                "车辆碾压",
-                "车辆碾压秒杀玩家",
-                false,
-                "启用后，C.A.R.T / 购物车车辆撞击玩家时会按秒杀处理。建议所有玩家都安装本 mod。");
-
             EnemyInCartInstantKill = config.Bind(
                 "车辆碾压",
                 "敌人进车秒杀",
                 LegacyBool(config, true, "车辆碾压", "车辆碾压秒杀敌人", "VehicleCrush", "InstantKillEnemies"),
                 "启用后，敌人或敌人刚体进入购物车时会立刻死亡。此功能复刻 ShrinkerCartPlus 的敌人进车秒杀逻辑。");
+
+            DynamicItemScanEnabled = config.Bind(
+                "性能",
+                "启用动态物品扫描",
+                true,
+                "启用后，ShrinkCart 会根据当前跟踪的缩小物品数量自动拉长状态扫描间隔，减少车内物品很多时的卡顿。");
+
+            MinimumItemScanIntervalSeconds = config.Bind(
+                "性能",
+                "最小物品扫描间隔",
+                0.15f,
+                Ranged("少量物品时的最短状态扫描间隔。数值越小，离车恢复越灵敏，但开销更高。", 0.05f, 1.0f));
+
+            MaximumItemScanIntervalSeconds = config.Bind(
+                "性能",
+                "最大物品扫描间隔",
+                1.0f,
+                Ranged("大量物品时允许使用的最长状态扫描间隔。数值越大越省性能，但离车恢复最多会延后一个扫描间隔。", 0.1f, 2.0f));
 
             DebugLogging = config.Bind(
                 "诊断",
@@ -266,13 +270,13 @@ namespace ShrinkCart
             WatchScaling(RestoreScaleSpeed);
             WatchScaling(CartLeaveDebounceSeconds);
             WatchScaling(ReshrinkCooldownSeconds);
-            WatchScaling(PreserveCartMass);
+            WatchScaling(ScaleMassWithSize);
             WatchScaling(ShrinkShopPlayerItems);
             WatchScaling(PlayerScalingModuleEnabled);
-            WatchScaling(ShrinkPlayers);
             WatchScaling(PlayerCartScaleFactor);
             WatchScaling(PlayerCartStandTriggerSeconds);
             WatchScaling(PlayerCartExitGraceSeconds);
+            WatchScaling(PlayerCartDetectionIntervalSeconds);
             WatchScaling(RestorePlayerOnDamage);
             WatchScaling(SuppressValuableDamageRestore);
             WatchScaling(TinyEnabled);
@@ -300,6 +304,7 @@ namespace ShrinkCart
             WatchScaling(ValuableBoxScaleFactor);
             WatchScaling(FallbackScaleFactor);
 
+            RemoveDeprecatedEntries(config);
         }
 
         internal static float SafeScaleSpeed()
@@ -330,6 +335,11 @@ namespace ShrinkCart
                    PlayerScalingModuleEnabled.Value;
         }
 
+        internal static bool ShouldPreserveMass()
+        {
+            return ScaleMassWithSize == null || !ScaleMassWithSize.Value;
+        }
+
         internal static float SafePlayerCartScaleFactor()
         {
             return Mathf.Clamp(PlayerCartScaleFactor.Value, 0.05f, 1.0f);
@@ -345,14 +355,30 @@ namespace ShrinkCart
             return Mathf.Clamp(PlayerCartExitGraceSeconds.Value, 0.0f, 2.0f);
         }
 
-        internal static float SafeCartSeparationStrength()
+        internal static float SafePlayerCartDetectionIntervalSeconds()
         {
-            return CartSeparationStrengthDefault;
+            return Mathf.Clamp(PlayerCartDetectionIntervalSeconds.Value, 0.25f, 2.0f);
         }
 
-        internal static float SafeCartMaximumCorrectionDistance()
+        internal static bool DynamicItemScanEnabledValue()
         {
-            return CartMaximumCorrectionDistanceDefault;
+            return DynamicItemScanEnabled != null && DynamicItemScanEnabled.Value;
+        }
+
+        internal static float SafeMinimumItemScanIntervalSeconds()
+        {
+            return MinimumItemScanIntervalSeconds == null
+                ? 0.15f
+                : Mathf.Clamp(MinimumItemScanIntervalSeconds.Value, 0.05f, 1.0f);
+        }
+
+        internal static float SafeMaximumItemScanIntervalSeconds()
+        {
+            float minimum = SafeMinimumItemScanIntervalSeconds();
+            float configured = MaximumItemScanIntervalSeconds == null
+                ? 1.0f
+                : Mathf.Clamp(MaximumItemScanIntervalSeconds.Value, 0.1f, 2.0f);
+            return Mathf.Max(minimum, configured);
         }
 
         internal static bool TryGetScaleFactor(ShrinkCategory category, out float factor)
@@ -457,6 +483,62 @@ namespace ShrinkCart
             }
 
             return defaultValue;
+        }
+
+        private static void RemoveDeprecatedEntries(ConfigFile config)
+        {
+            bool changed = false;
+
+            changed |= RemoveDeprecatedEntry(config, "Cart", "Enabled");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "ScaleFactor");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "ScaleSpeed");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "RestoreGraceSeconds");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "PreserveMass");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "ShrinkNonValuableItems");
+            changed |= RemoveDeprecatedEntry(config, "Cart", "SuppressValuableDamageRestore");
+            changed |= RemoveDeprecatedEntry(config, "Diagnostics", "DebugLogging");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "保持原始重量");
+
+            changed |= RemoveDeprecatedEntry(config, "VehicleCrush", "InstantKillPlayers");
+            changed |= RemoveDeprecatedEntry(config, "VehicleCrush", "InstantKillEnemies");
+            changed |= RemoveDeprecatedEntry(config, "视觉", "隐藏缩放闪光");
+            changed |= RemoveDeprecatedEntry(config, "车辆碾压", "车辆碾压秒杀玩家");
+
+            changed |= RemoveDeprecatedEntry(config, "提取点复活兼容", "启用提取点复活");
+            changed |= RemoveDeprecatedEntry(config, "提取点复活兼容", "复活前稳定检测时间");
+            changed |= RemoveDeprecatedEntry(config, "提取点复活兼容", "复活检测间隔");
+            changed |= RemoveDeprecatedEntry(config, "提取点复活兼容", "拦截外部立即复活调用");
+
+            changed |= RemoveDeprecatedEntry(config, "购物车", "商店用品也缩小");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家也缩小");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "启用实验性玩家缩放");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家死亡前自动恢复");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "启用玩家缩放");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家进车缩放倍率");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家站车触发时间");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家离车判定宽容时间");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "玩家进车切换间隔");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "普通物品也缩小");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "商店/人物用品也缩小");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "防止车辆互相重叠");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆硬碰撞修正强度");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆最大单帧修正距离");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆挤压速度清除");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆临时忽略碰撞时间（已废弃）");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆临时忽略碰撞时间");
+            changed |= RemoveDeprecatedEntry(config, "购物车", "车辆脱困强度");
+
+            changed |= RemoveDeprecatedEntry(config, "玩家缩放", "旧版玩家缩放开关（已停用）");
+
+            if (changed)
+            {
+                config.Save();
+            }
+        }
+
+        private static bool RemoveDeprecatedEntry(ConfigFile config, string section, string key)
+        {
+            return config.Remove(new ConfigDefinition(section, key));
         }
 
         private static void WatchScaling<T>(ConfigEntry<T> entry)

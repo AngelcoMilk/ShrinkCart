@@ -8,13 +8,16 @@ namespace ShrinkCart
 {
     internal static class ShrinkerCartController
     {
-        private const float TickIntervalSeconds = 0.1f;
+        private const float LowTrackedObjectIntervalSeconds = 0.35f;
+        private const float MediumTrackedObjectIntervalSeconds = 0.75f;
 
         private sealed class TrackedObject
         {
             internal GameObject Target;
             internal float LastSeenInCartTime;
-            internal float EarliestRestoreTime;
+            internal float RestoreCheckDueTime;
+            internal int LastSeenCartId;
+            internal bool MarkedInCartThisPass;
             internal ShrinkCategory Category;
         }
 
@@ -51,6 +54,8 @@ namespace ShrinkCart
             typeof(PhysGrabCart).GetField("physGrabObject", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         private static float _nextTickTime;
+        private static float _nextRestoreCheckTime = float.PositiveInfinity;
+        private static float _nextCooldownCheckTime = float.PositiveInfinity;
 
         internal static void Reset()
         {
@@ -62,6 +67,8 @@ namespace ShrinkCart
             ExpiredCooldownIds.Clear();
             RestoreTargets.Clear();
             _nextTickTime = 0.0f;
+            _nextRestoreCheckTime = float.PositiveInfinity;
+            _nextCooldownCheckTime = float.PositiveInfinity;
         }
 
         internal static void ProcessCartObject(PhysGrabInCart inCart, PhysGrabObject item)
@@ -87,7 +94,33 @@ namespace ShrinkCart
 
             if (canShrink)
             {
-                TrackOrShrink(item, category, factor);
+                TrackOrShrink(item, category, factor, inCart.cart);
+            }
+        }
+
+        internal static void MarkObjectsSeenInCart(PhysGrabCart cart, List<PhysGrabObject> items)
+        {
+            if (!IsHostOrSingleplayer() || items == null || TrackedObjects.Count == 0)
+            {
+                return;
+            }
+
+            float now = Time.time;
+            int cartId = cart == null ? 0 : cart.GetInstanceID();
+            for (int i = 0; i < items.Count; i++)
+            {
+                PhysGrabObject item = items[i];
+                GameObject target = item == null ? null : item.gameObject;
+                if (target == null)
+                {
+                    continue;
+                }
+
+                TrackedObject tracked;
+                if (TrackedObjects.TryGetValue(target.GetInstanceID(), out tracked))
+                {
+                    MarkTrackedInCart(tracked, now, cartId);
+                }
             }
         }
 
@@ -99,27 +132,35 @@ namespace ShrinkCart
             }
 
             float now = Time.time;
-            if (now < _nextTickTime)
+            if (now < _nextTickTime && now < _nextRestoreCheckTime && now < _nextCooldownCheckTime)
             {
                 return;
             }
 
-            _nextTickTime = now + TickIntervalSeconds;
-            ClearExpiredCooldowns(now);
+            _nextTickTime = now + GetCurrentTickInterval();
 
             if (!ModConfig.CartShrinkingEnabled.Value)
             {
                 RestoreAll();
+                ClearExpiredCooldowns(now);
                 return;
             }
 
             if (TrackedObjects.Count == 0)
             {
+                ClearExpiredCooldowns(now);
+                _nextRestoreCheckTime = float.PositiveInfinity;
                 return;
             }
 
-            float leaveDebounce = ModConfig.SafeCartLeaveDebounceSeconds();
+            ClearExpiredCooldowns(now);
+            if (now < _nextRestoreCheckTime)
+            {
+                return;
+            }
+
             RestoreIds.Clear();
+            float nextRestoreCheck = float.PositiveInfinity;
 
             foreach (KeyValuePair<int, TrackedObject> pair in TrackedObjects)
             {
@@ -127,7 +168,7 @@ namespace ShrinkCart
                 bool isEquipped = tracked.Target != null && IsTrackedEquipped(tracked.Target);
                 if (tracked.Target == null ||
                     isEquipped ||
-                    (now - tracked.LastSeenInCartTime >= leaveDebounce && now >= tracked.EarliestRestoreTime))
+                    now >= tracked.RestoreCheckDueTime)
                 {
                     if (isEquipped)
                     {
@@ -135,6 +176,10 @@ namespace ShrinkCart
                     }
 
                     RestoreIds.Add(pair.Key);
+                }
+                else if (tracked.RestoreCheckDueTime < nextRestoreCheck)
+                {
+                    nextRestoreCheck = tracked.RestoreCheckDueTime;
                 }
             }
 
@@ -150,6 +195,8 @@ namespace ShrinkCart
                 RestoreTrackedObject(id, tracked.Target);
                 TrackedObjects.Remove(id);
             }
+
+            _nextRestoreCheckTime = TrackedObjects.Count == 0 ? float.PositiveInfinity : nextRestoreCheck;
         }
 
         internal static void RestoreAll()
@@ -169,6 +216,7 @@ namespace ShrinkCart
             }
 
             TrackedObjects.Clear();
+            _nextRestoreCheckTime = float.PositiveInfinity;
 
             for (int i = 0; i < RestoreTargets.Count; i++)
             {
@@ -178,7 +226,42 @@ namespace ShrinkCart
             RestoreTargets.Clear();
         }
 
-        private static void TrackOrShrink(PhysGrabObject item, ShrinkCategory category, float factor)
+        private static float GetCurrentTickInterval()
+        {
+            float minimum = ModConfig.SafeMinimumItemScanIntervalSeconds();
+            if (!ModConfig.DynamicItemScanEnabledValue())
+            {
+                return minimum;
+            }
+
+            float maximum = ModConfig.SafeMaximumItemScanIntervalSeconds();
+            int count = TrackedObjects.Count;
+            float interval;
+            if (count <= 0)
+            {
+                interval = maximum;
+            }
+            else if (count <= 6)
+            {
+                interval = minimum;
+            }
+            else if (count <= 15)
+            {
+                interval = LowTrackedObjectIntervalSeconds;
+            }
+            else if (count <= 30)
+            {
+                interval = MediumTrackedObjectIntervalSeconds;
+            }
+            else
+            {
+                interval = maximum;
+            }
+
+            return Mathf.Clamp(interval, minimum, maximum);
+        }
+
+        private static void TrackOrShrink(PhysGrabObject item, ShrinkCategory category, float factor, PhysGrabCart cart)
         {
             GameObject target = item == null ? null : item.gameObject;
             if (target == null)
@@ -191,8 +274,7 @@ namespace ShrinkCart
             TrackedObject tracked;
             if (TrackedObjects.TryGetValue(id, out tracked))
             {
-                tracked.LastSeenInCartTime = now;
-                tracked.EarliestRestoreTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
+                MarkTrackedInCart(tracked, now, cart == null ? 0 : cart.GetInstanceID());
                 tracked.Category = category;
                 return;
             }
@@ -227,10 +309,10 @@ namespace ShrinkCart
                 ? ScaleTargets.All
                 : ScaleTargets.Valuables | ScaleTargets.Items;
             options.SuppressValueDropExpand = ModConfig.SuppressValuableDamageRestore.Value;
-            options.PreserveMass = ModConfig.PreserveCartMass.Value;
+            options.PreserveMass = ModConfig.ShouldPreserveMass();
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
-            options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
-            options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
+            options.SuppressImpactFlash = true;
+            options.SuppressCameraShake = true;
 
             try
             {
@@ -253,15 +335,41 @@ namespace ShrinkCart
                 return;
             }
 
+            float restoreDueTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
             TrackedObjects[id] = new TrackedObject
             {
                 Target = target,
                 LastSeenInCartTime = now,
-                EarliestRestoreTime = now + ModConfig.SafeCartLeaveDebounceSeconds(),
+                RestoreCheckDueTime = restoreDueTime,
+                LastSeenCartId = cart == null ? 0 : cart.GetInstanceID(),
+                MarkedInCartThisPass = true,
                 Category = category
             };
+            ScheduleRestoreCheck(restoreDueTime);
 
             DebugLog("Shrunk " + target.name + " as " + category + " factor=" + factor.ToString("0.###"));
+        }
+
+        private static void MarkTrackedInCart(TrackedObject tracked, float now, int cartId)
+        {
+            if (tracked == null)
+            {
+                return;
+            }
+
+            tracked.LastSeenInCartTime = now;
+            tracked.RestoreCheckDueTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
+            tracked.LastSeenCartId = cartId;
+            tracked.MarkedInCartThisPass = true;
+            ScheduleRestoreCheck(tracked.RestoreCheckDueTime);
+        }
+
+        private static void ScheduleRestoreCheck(float dueTime)
+        {
+            if (dueTime < _nextRestoreCheckTime)
+            {
+                _nextRestoreCheckTime = dueTime;
+            }
         }
 
         private static void RestoreTrackedObject(int id, GameObject target)
@@ -300,8 +408,8 @@ namespace ShrinkCart
 
             ScaleOptions options = controller.CurrentOptions;
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
-            options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
-            options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
+            options.SuppressImpactFlash = true;
+            options.SuppressCameraShake = true;
             ScaleManager.UpdateOptions(target, options);
         }
 
@@ -642,7 +750,12 @@ namespace ShrinkCart
 
         private static void BeginReshrinkCooldown(int id)
         {
-            ReshrinkCooldownUntil[id] = Time.time + ModConfig.SafeReshrinkCooldownSeconds();
+            float until = Time.time + ModConfig.SafeReshrinkCooldownSeconds();
+            ReshrinkCooldownUntil[id] = until;
+            if (until < _nextCooldownCheckTime)
+            {
+                _nextCooldownCheckTime = until;
+            }
         }
 
         private static bool IsInReshrinkCooldown(int id)
@@ -666,15 +779,26 @@ namespace ShrinkCart
         {
             if (ReshrinkCooldownUntil.Count == 0)
             {
+                _nextCooldownCheckTime = float.PositiveInfinity;
+                return;
+            }
+
+            if (now < _nextCooldownCheckTime)
+            {
                 return;
             }
 
             ExpiredCooldownIds.Clear();
+            float nextCooldownCheck = float.PositiveInfinity;
             foreach (KeyValuePair<int, float> pair in ReshrinkCooldownUntil)
             {
                 if (now >= pair.Value)
                 {
                     ExpiredCooldownIds.Add(pair.Key);
+                }
+                else if (pair.Value < nextCooldownCheck)
+                {
+                    nextCooldownCheck = pair.Value;
                 }
             }
 
@@ -684,6 +808,7 @@ namespace ShrinkCart
             }
 
             ExpiredCooldownIds.Clear();
+            _nextCooldownCheckTime = ReshrinkCooldownUntil.Count == 0 ? float.PositiveInfinity : nextCooldownCheck;
         }
 
         private static string CleanName(string name)
@@ -698,14 +823,7 @@ namespace ShrinkCart
 
         private static bool IsHostOrSingleplayer()
         {
-            try
-            {
-                return SemiFunc.IsMasterClientOrSingleplayer();
-            }
-            catch
-            {
-                return true;
-            }
+            return Authority.IsHostOrSingleplayer();
         }
 
         private static void DebugLog(string message)

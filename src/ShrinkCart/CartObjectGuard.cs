@@ -101,22 +101,4 @@ namespace ShrinkCart
         }
 
     }
-
-    internal static class CartCollisionGuard
-    {
-        internal static void HandleBlockedCartInCart(PhysGrabInCart destination, PhysGrabObject item)
-        {
-            CartRegistry.HandleBlockedCartInCart(destination, item);
-        }
-
-        internal static void CleanCartContents(PhysGrabCart cart)
-        {
-            CartRegistry.CleanCartContents(cart);
-        }
-
-        internal static void Reset()
-        {
-            CartRegistry.Reset();
-        }
-    }
 }

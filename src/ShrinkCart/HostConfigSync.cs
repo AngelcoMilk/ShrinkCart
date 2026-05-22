@@ -8,20 +8,18 @@ namespace ShrinkCart
     internal static class HostConfigSync
     {
         private const string ConfigKey = "ShrinkCart.HostConfig.v2";
-        private const string PayloadVersion = "SC0222";
+        private const string PayloadVersion = "SC0232";
         private const float SyncIntervalSeconds = 0.5f;
         private const int CategoryCount = 14;
 
         private sealed class Snapshot
         {
             internal bool CartEnabled;
-            internal bool HideScaleFlash;
             internal bool ShrinkShopPlayerItems;
             internal bool PlayerScalingModuleEnabled;
-            internal bool ShrinkPlayers;
             internal bool RestorePlayerOnDamage;
             internal bool EnemyInCartInstantKill;
-            internal bool PreserveCartMass;
+            internal bool PreserveMass;
             internal bool SuppressValuableDamageRestore;
             internal float CartLeaveDebounceSeconds;
             internal float ReshrinkCooldownSeconds;
@@ -30,6 +28,7 @@ namespace ShrinkCart
             internal float PlayerCartScaleFactor;
             internal float PlayerCartStandTriggerSeconds;
             internal float PlayerCartExitGraceSeconds;
+            internal float PlayerCartDetectionIntervalSeconds;
             internal readonly bool[] Enabled = new bool[CategoryCount];
             internal readonly float[] Factors = new float[CategoryCount];
         }
@@ -41,6 +40,8 @@ namespace ShrinkCart
         private static string _lastPublishedPayload;
         private static string _lastReadPayload;
         private static float _nextSyncTime;
+        private static bool _lastWasMasterClient;
+        private static int _lastPublishedConfigVersion = int.MinValue;
 
         internal static void Reset()
         {
@@ -48,6 +49,8 @@ namespace ShrinkCart
             _lastPublishedPayload = null;
             _lastReadPayload = null;
             _nextSyncTime = 0.0f;
+            _lastWasMasterClient = false;
+            _lastPublishedConfigVersion = int.MinValue;
         }
 
         internal static void Tick()
@@ -56,31 +59,48 @@ namespace ShrinkCart
             {
                 _remoteSnapshot = null;
                 _lastReadPayload = null;
+                _lastWasMasterClient = false;
+                _lastPublishedPayload = null;
+                _lastPublishedConfigVersion = int.MinValue;
                 return;
             }
-
-            if (UnityEngine.Time.time < _nextSyncTime)
-            {
-                return;
-            }
-
-            _nextSyncTime = UnityEngine.Time.time + SyncIntervalSeconds;
 
             if (PhotonNetwork.IsMasterClient)
             {
+                if (!_lastWasMasterClient)
+                {
+                    _lastPublishedPayload = null;
+                    _lastPublishedConfigVersion = int.MinValue;
+                }
+
                 PublishIfChanged();
+                _lastWasMasterClient = true;
             }
             else
             {
+                _lastWasMasterClient = false;
+                if (UnityEngine.Time.time < _nextSyncTime)
+                {
+                    return;
+                }
+
+                _nextSyncTime = UnityEngine.Time.time + SyncIntervalSeconds;
                 ReadRemoteSnapshot();
             }
         }
 
         private static void PublishIfChanged()
         {
+            if (_lastPublishedPayload != null &&
+                _lastPublishedConfigVersion == ModConfig.ScalingConfigVersion)
+            {
+                return;
+            }
+
             string payload = BuildLocalPayload();
             if (payload == _lastPublishedPayload)
             {
+                _lastPublishedConfigVersion = ModConfig.ScalingConfigVersion;
                 return;
             }
 
@@ -88,6 +108,7 @@ namespace ShrinkCart
             properties[ConfigKey] = payload;
             PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
             _lastPublishedPayload = payload;
+            _lastPublishedConfigVersion = ModConfig.ScalingConfigVersion;
         }
 
         private static void ReadRemoteSnapshot()
@@ -121,13 +142,11 @@ namespace ShrinkCart
             Builder.Length = 0;
             Builder.Append(PayloadVersion);
             Append(ModConfig.CartShrinkingEnabled.Value);
-            Append(ModConfig.HideScaleFlash.Value);
             Append(ModConfig.ShrinkShopPlayerItems.Value);
             Append(ModConfig.PlayerScalingModuleEnabled.Value);
-            Append(ModConfig.ShrinkPlayers.Value);
             Append(ModConfig.RestorePlayerOnDamage.Value);
             Append(ModConfig.EnemyInCartInstantKill.Value);
-            Append(ModConfig.PreserveCartMass.Value);
+            Append(ModConfig.ShouldPreserveMass());
             Append(ModConfig.SuppressValuableDamageRestore.Value);
             Append(ModConfig.SafeCartLeaveDebounceSeconds());
             Append(ModConfig.SafeReshrinkCooldownSeconds());
@@ -136,7 +155,7 @@ namespace ShrinkCart
             Append(ModConfig.SafePlayerCartScaleFactor());
             Append(ModConfig.SafePlayerCartStandTriggerSeconds());
             Append(ModConfig.SafePlayerCartExitGraceSeconds());
-
+            Append(ModConfig.SafePlayerCartDetectionIntervalSeconds());
             for (int i = 0; i < CategoryCount; i++)
             {
                 bool enabled;
@@ -153,7 +172,7 @@ namespace ShrinkCart
         {
             snapshot = null;
             string[] parts = payload.Split('|');
-            int expected = 17 + CategoryCount * 2;
+            int expected = 16 + CategoryCount * 2;
             if (parts.Length != expected || parts[0] != PayloadVersion)
             {
                 return false;
@@ -162,13 +181,11 @@ namespace ShrinkCart
             Snapshot parsed = new Snapshot();
             int index = 1;
             if (!TryParseBool(parts[index++], out parsed.CartEnabled) ||
-                !TryParseBool(parts[index++], out parsed.HideScaleFlash) ||
                 !TryParseBool(parts[index++], out parsed.ShrinkShopPlayerItems) ||
                 !TryParseBool(parts[index++], out parsed.PlayerScalingModuleEnabled) ||
-                !TryParseBool(parts[index++], out parsed.ShrinkPlayers) ||
                 !TryParseBool(parts[index++], out parsed.RestorePlayerOnDamage) ||
                 !TryParseBool(parts[index++], out parsed.EnemyInCartInstantKill) ||
-                !TryParseBool(parts[index++], out parsed.PreserveCartMass) ||
+                !TryParseBool(parts[index++], out parsed.PreserveMass) ||
                 !TryParseBool(parts[index++], out parsed.SuppressValuableDamageRestore) ||
                 !TryParseFloat(parts[index++], out parsed.CartLeaveDebounceSeconds) ||
                 !TryParseFloat(parts[index++], out parsed.ReshrinkCooldownSeconds) ||
@@ -176,7 +193,8 @@ namespace ShrinkCart
                 !TryParseFloat(parts[index++], out parsed.RestoreScaleSpeed) ||
                 !TryParseFloat(parts[index++], out parsed.PlayerCartScaleFactor) ||
                 !TryParseFloat(parts[index++], out parsed.PlayerCartStandTriggerSeconds) ||
-                !TryParseFloat(parts[index++], out parsed.PlayerCartExitGraceSeconds))
+                !TryParseFloat(parts[index++], out parsed.PlayerCartExitGraceSeconds) ||
+                !TryParseFloat(parts[index++], out parsed.PlayerCartDetectionIntervalSeconds))
             {
                 return false;
             }

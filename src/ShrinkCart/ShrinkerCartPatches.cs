@@ -7,9 +7,14 @@ namespace ShrinkCart
     {
         private static bool Prefix(PhysGrabInCart __instance, PhysGrabObject _physGrabObject)
         {
+            if (!Authority.IsHostOrSingleplayer())
+            {
+                return true;
+            }
+
             if (CartObjectGuard.ShouldBlockCartInCart(__instance, _physGrabObject))
             {
-                CartCollisionGuard.HandleBlockedCartInCart(__instance, _physGrabObject);
+                CartRegistry.HandleBlockedCartInCart(__instance, _physGrabObject);
                 return false;
             }
 
@@ -28,7 +33,10 @@ namespace ShrinkCart
         private static void Postfix(PhysGrabCart __instance)
         {
             CartRegistry.RegisterCart(__instance);
-            PlayerCartScaleController.RegisterCart(__instance);
+            if (ModConfig.PlayerScalingEnabled())
+            {
+                PlayerCartScaleController.RegisterCart(__instance);
+            }
         }
     }
 
@@ -37,21 +45,7 @@ namespace ShrinkCart
     {
         private static void Postfix(PhysGrabCart __instance)
         {
-            CartCollisionGuard.CleanCartContents(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(HurtCollider), "PlayerHurt")]
-    internal static class HurtColliderPlayerHurtPatch
-    {
-        private static void Prefix(HurtCollider __instance, out VehicleCrushController.TemporaryHurtState __state)
-        {
-            __state = VehicleCrushController.BeforePlayerHurt(__instance);
-        }
-
-        private static void Postfix(HurtCollider __instance, VehicleCrushController.TemporaryHurtState __state)
-        {
-            VehicleCrushController.AfterHurt(__instance, __state);
+            CartRegistry.CleanCartContents(__instance);
         }
     }
 
@@ -62,48 +56,11 @@ namespace ShrinkCart
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
-            PlayerScaleDeathSafety.ClearAll();
             PlayerCartScaleController.Reset();
-            CartCollisionGuard.Reset();
-            VehicleCrushController.RestoreAll();
+            CartRegistry.Reset();
+            ValuableBoxScaleAdapter.Reset();
             EnemyInCartKillController.Reset();
             HostConfigSync.Reset();
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerAvatar), "PlayerDeath")]
-    internal static class PlayerAvatarPlayerDeathPatch
-    {
-        private static void Prefix(PlayerAvatar __instance)
-        {
-            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance, "PlayerDeath");
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerAvatar), "PlayerDeathRPC")]
-    internal static class PlayerAvatarPlayerDeathRpcPatch
-    {
-        private static void Prefix(PlayerAvatar __instance)
-        {
-            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance, "PlayerDeathRPC");
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerHealth), "Death")]
-    internal static class PlayerHealthDeathPatch
-    {
-        private static void Prefix(PlayerHealth __instance)
-        {
-            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance == null ? null : __instance.GetComponent<PlayerAvatar>(), "PlayerHealth.Death");
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerDeathHead), "Trigger")]
-    internal static class PlayerDeathHeadTriggerPatch
-    {
-        private static void Prefix(PlayerDeathHead __instance)
-        {
-            PlayerScaleDeathSafety.RestoreBeforeDeath(__instance == null ? null : __instance.playerAvatar, "PlayerDeathHead.Trigger");
         }
     }
 

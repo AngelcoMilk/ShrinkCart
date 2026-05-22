@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.22"
+$modVersion = "0.2.33"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -122,19 +122,12 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabObject"; Method = "Start"; Parameters = @() },
         @{ Type = "ItemValuableBox"; Method = "Start"; Parameters = @() },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
-        @{ Type = "HurtCollider"; Method = "PlayerHurt"; Parameters = @("PlayerAvatar") },
-        @{ Type = "PlayerHealth"; Method = "Death"; Parameters = @() },
-        @{ Type = "PlayerAvatar"; Method = "PlayerDeath"; Parameters = @("System.Int32") },
-        @{ Type = "PlayerAvatar"; Method = "PlayerDeathRPC"; Parameters = @("System.Int32", "Photon.Pun.PhotonMessageInfo") },
-        @{ Type = "PlayerDeathHead"; Method = "Trigger"; Parameters = @() },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
     $requiredFields = @(
         @{ Type = "PhysGrabInCart"; Field = "cart" },
         @{ Type = "CosmeticWorldObject"; Field = "physGrabObject" },
-        @{ Type = "HurtCollider"; Field = "playerKill" },
-        @{ Type = "HurtCollider"; Field = "playerLogic" },
         @{ Type = "EnemyRigidbody"; Field = "enemy" },
         @{ Type = "Enemy"; Field = "Health" },
         @{ Type = "EnemyHealth"; Field = "healthCurrent" },
@@ -148,11 +141,8 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabCart"; Field = "itemsInCartCount" },
         @{ Type = "PhysGrabCart"; Field = "haulCurrent" },
         @{ Type = "PhysGrabCart"; Field = "valueScreen" },
-        @{ Type = "PlayerHealth"; Field = "playerAvatar" },
-        @{ Type = "PlayerDeathHead"; Field = "playerAvatar" },
         @{ Type = "PlayerAvatar"; Field = "physObjectStander" },
-        @{ Type = "PlayerAvatar"; Field = "collider" },
-        @{ Type = "PlayerPhysObjectStander"; Field = "physGrabObjects" }
+        @{ Type = "PlayerAvatar"; Field = "collider" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]

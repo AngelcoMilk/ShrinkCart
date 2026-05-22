@@ -30,6 +30,11 @@ namespace ShrinkCart
 
         internal static void RegisterCart(PhysGrabCart cart)
         {
+            if (!IsHostOrSingleplayer())
+            {
+                return;
+            }
+
             if (cart == null)
             {
                 return;
@@ -43,10 +48,36 @@ namespace ShrinkCart
             DebugLog("Registered cart content guard target: " + cart.name);
         }
 
+        internal static void RegisterExistingCarts()
+        {
+            if (!IsHostOrSingleplayer())
+            {
+                return;
+            }
+
+            PhysGrabCart[] carts = Object.FindObjectsOfType<PhysGrabCart>();
+            for (int i = 0; i < carts.Length; i++)
+            {
+                RegisterCart(carts[i]);
+            }
+        }
+
         internal static void CleanCartContents(PhysGrabCart cart)
         {
+            if (!IsHostOrSingleplayer())
+            {
+                return;
+            }
+
             CartState state = GetOrCreateState(cart);
-            RemoveCartLikeItems(state);
+            List<PhysGrabObject> items = GetItemsInCart(state == null ? null : state.Cart);
+            if (state == null || state.Cart == null || items == null)
+            {
+                return;
+            }
+
+            RemoveCartLikeItems(state, items);
+            ShrinkerCartController.MarkObjectsSeenInCart(state.Cart, items);
         }
 
         internal static void Reset()
@@ -63,18 +94,18 @@ namespace ShrinkCart
                 return;
             }
 
-            if (!IsHostOrSingleplayer())
-            {
-                return;
-            }
-
             CartState destinationState = GetOrCreateState(destination.cart);
             if (destinationState == null)
             {
                 return;
             }
 
-            RemoveCartLikeItems(destinationState);
+            List<PhysGrabObject> items = GetItemsInCart(destinationState.Cart);
+            if (items != null)
+            {
+                RemoveCartLikeItems(destinationState, items);
+            }
+
             DebugLog("Blocked cart-like object from cart Add: " + item.name);
         }
 
@@ -114,14 +145,8 @@ namespace ShrinkCart
             RemoveCartIds.Clear();
         }
 
-        private static void RemoveCartLikeItems(CartState state)
+        private static void RemoveCartLikeItems(CartState state, List<PhysGrabObject> items)
         {
-            if (!IsHostOrSingleplayer())
-            {
-                return;
-            }
-
-            List<PhysGrabObject> items = GetItemsInCart(state == null ? null : state.Cart);
             if (state == null || state.Cart == null || items == null)
             {
                 return;
@@ -240,14 +265,7 @@ namespace ShrinkCart
 
         private static bool IsHostOrSingleplayer()
         {
-            try
-            {
-                return SemiFunc.IsMasterClientOrSingleplayer();
-            }
-            catch
-            {
-                return true;
-            }
+            return Authority.IsHostOrSingleplayer();
         }
     }
 }

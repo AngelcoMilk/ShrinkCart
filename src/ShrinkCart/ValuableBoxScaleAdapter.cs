@@ -8,7 +8,19 @@ namespace ShrinkCart
     {
         private const int HandlerPriority = -10;
 
+        private static readonly System.Collections.Generic.HashSet<int> ValuableBoxObjectIds =
+            new System.Collections.Generic.HashSet<int>();
+
+        private static readonly System.Collections.Generic.HashSet<int> NonValuableBoxObjectIds =
+            new System.Collections.Generic.HashSet<int>();
+
         private static bool _registered;
+
+        internal static void Reset()
+        {
+            ValuableBoxObjectIds.Clear();
+            NonValuableBoxObjectIds.Clear();
+        }
 
         internal static void RegisterHandler()
         {
@@ -23,7 +35,33 @@ namespace ShrinkCart
 
         internal static bool IsValuableBox(PhysGrabObject item)
         {
-            return FindCosmeticWorldObject(item) != null || FindValuableBox(item) != null;
+            if (item == null || item.gameObject == null)
+            {
+                return false;
+            }
+
+            int id = item.gameObject.GetInstanceID();
+            if (ValuableBoxObjectIds.Contains(id))
+            {
+                return true;
+            }
+
+            if (NonValuableBoxObjectIds.Contains(id))
+            {
+                return false;
+            }
+
+            bool isValuableBox = FindCosmeticWorldObject(item) != null || FindValuableBox(item) != null;
+            if (isValuableBox)
+            {
+                ValuableBoxObjectIds.Add(id);
+            }
+            else
+            {
+                NonValuableBoxObjectIds.Add(id);
+            }
+
+            return isValuableBox;
         }
 
         internal static bool EnsureController(GameObject target)

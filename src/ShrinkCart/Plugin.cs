@@ -11,19 +11,23 @@ namespace ShrinkCart
     {
         public const string PluginGuid = "AngelcoMilk.ShrinkCart";
         public const string PluginName = "ShrinkCart";
-        public const string PluginVersion = "0.2.22";
+        public const string PluginVersion = "0.2.33";
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
 
         private Harmony _harmony;
+        private bool _playerScalingWasEnabled;
+        private bool _wasHostOrSingleplayer;
 
         private void Awake()
         {
             Instance = this;
             Log = Logger;
 
+            Authority.Reset();
             ModConfig.Bind(Config);
+            ValuableBoxScaleAdapter.Reset();
             ValuableBoxScaleAdapter.RegisterHandler();
             ShrinkerCartController.Reset();
             PlayerCartScaleController.Reset();
@@ -38,26 +42,47 @@ namespace ShrinkCart
 
         private void Update()
         {
+            bool hostOrSingleplayer = Authority.IsHostOrSingleplayer();
+            if (hostOrSingleplayer && !_wasHostOrSingleplayer)
+            {
+                CartRegistry.RegisterExistingCarts();
+                if (ModConfig.PlayerScalingEnabled())
+                {
+                    PlayerCartScaleController.Reset();
+                    PlayerCartScaleController.RegisterExistingCarts();
+                    _playerScalingWasEnabled = true;
+                }
+            }
+
             HostConfigSync.Tick();
             ShrinkerCartController.Tick();
-            if (ModConfig.PlayerScalingEnabled())
+            bool playerScalingEnabled = ModConfig.PlayerScalingEnabled();
+            if (playerScalingEnabled)
             {
+                if (!_playerScalingWasEnabled)
+                {
+                    PlayerCartScaleController.Reset();
+                    PlayerCartScaleController.RegisterExistingCarts();
+                }
+
                 PlayerCartScaleController.Tick();
             }
-            else
+            else if (_playerScalingWasEnabled)
             {
                 PlayerCartScaleController.Disable();
             }
+
+            _playerScalingWasEnabled = playerScalingEnabled;
+            _wasHostOrSingleplayer = hostOrSingleplayer;
         }
 
         private void OnDestroy()
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
-            CartCollisionGuard.Reset();
-            PlayerScaleDeathSafety.ClearAll();
-            VehicleCrushController.RestoreAll();
+            CartRegistry.Reset();
             HostConfigSync.Reset();
+            Authority.Reset();
 
             if (_harmony != null)
             {

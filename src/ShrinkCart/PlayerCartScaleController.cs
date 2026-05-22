@@ -8,10 +8,9 @@ namespace ShrinkCart
 {
     internal static class PlayerCartScaleController
     {
-        private const float TickIntervalSeconds = 0.1f;
         private const float CenterZoneHorizontalScale = 0.45f;
-        private const float CenterZoneVerticalPaddingBelow = 0.6f;
-        private const float CenterZoneVerticalPaddingAbove = 0.8f;
+        private const float FloorProjectionPaddingBelow = 0.25f;
+        private const float FloorProjectionStandingHeightAbove = 1.4f;
         private const float MinimumCenterHalfExtent = 0.15f;
         private const float StandPointYOffset = 0.05f;
 
@@ -19,6 +18,7 @@ namespace ShrinkCart
         {
             internal PlayerAvatar Player;
             internal bool ShrinkCartScaled;
+            internal bool WasInCartRange;
             internal bool WasInTriggerZone;
             internal bool TriggeredThisStay;
             internal float TriggerZoneEnteredTime;
@@ -29,6 +29,12 @@ namespace ShrinkCart
         {
             internal PhysGrabCart Cart;
             internal Transform InCart;
+        }
+
+        private struct CartZoneResult
+        {
+            internal bool InCartRange;
+            internal bool InTriggerZone;
         }
 
         private static readonly Dictionary<int, CartState> RegisteredCarts =
@@ -62,6 +68,11 @@ namespace ShrinkCart
 
         internal static void RegisterCart(PhysGrabCart cart)
         {
+            if (!IsHostOrSingleplayer())
+            {
+                return;
+            }
+
             if (cart == null)
             {
                 return;
@@ -81,6 +92,15 @@ namespace ShrinkCart
             DebugLog("Registered regular cart for player stand-toggle: " + cart.name);
         }
 
+        internal static void RegisterExistingCarts()
+        {
+            PhysGrabCart[] carts = UnityEngine.Object.FindObjectsOfType<PhysGrabCart>();
+            for (int i = 0; i < carts.Length; i++)
+            {
+                RegisterCart(carts[i]);
+            }
+        }
+
         internal static void Tick()
         {
             if (!IsHostOrSingleplayer())
@@ -94,7 +114,7 @@ namespace ShrinkCart
                 return;
             }
 
-            _nextTickTime = now + TickIntervalSeconds;
+            _nextTickTime = now + ModConfig.SafePlayerCartDetectionIntervalSeconds();
 
             if (!ModConfig.PlayerScalingEnabled())
             {
@@ -138,50 +158,12 @@ namespace ShrinkCart
             }
 
             PlayerStates.Clear();
-            PlayerScaleDeathSafety.ClearActive();
         }
 
         internal static void Disable()
         {
             RestoreAll();
-            PlayerStates.Clear();
-            PlayerScaleDeathSafety.ClearActive();
-        }
-
-        internal static bool RestoreIfShrinkCartScaled(PlayerAvatar player, string reason)
-        {
-            if (player == null || player.gameObject == null)
-            {
-                return false;
-            }
-
-            int id = player.GetInstanceID();
-            PlayerState state;
-            if (!PlayerStates.TryGetValue(id, out state) || state == null || !state.ShrinkCartScaled)
-            {
-                return false;
-            }
-
-            bool restored = RestorePlayer(player.gameObject);
-            state.ShrinkCartScaled = false;
-            state.WasInTriggerZone = false;
-            state.TriggeredThisStay = false;
-            state.TriggerZoneEnteredTime = 0.0f;
-            state.LastInsideCenterTime = 0.0f;
-            PlayerScaleDeathSafety.UnmarkActive(player);
-            DebugLog("Restored ShrinkCart-scaled player before death: " + player.name + " reason=" + reason);
-            return restored;
-        }
-
-        internal static void ClearPlayerState(PlayerAvatar player)
-        {
-            if (player == null)
-            {
-                return;
-            }
-
-            PlayerStates.Remove(player.GetInstanceID());
-            PlayerScaleDeathSafety.UnmarkActive(player);
+            Reset();
         }
 
         private static void ProcessPlayer(PlayerAvatar player, float now)
@@ -209,28 +191,29 @@ namespace ShrinkCart
             if (state.ShrinkCartScaled && !ScaleManager.IsScaled(player.gameObject))
             {
                 state.ShrinkCartScaled = false;
-                PlayerScaleDeathSafety.UnmarkActive(player);
             }
 
-            bool inCenterZone = IsPlayerInsideAnyCartCenter(player);
-            bool inTriggerZone = inCenterZone;
-            if (inCenterZone)
+            CartZoneResult zone = GetPlayerCartZone(player);
+            bool inCartRange = zone.InCartRange;
+            bool inTriggerZone = zone.InTriggerZone;
+            if (inCartRange)
             {
                 state.LastInsideCenterTime = now;
             }
-            else if (state.WasInTriggerZone &&
+            else if (state.WasInCartRange &&
                      now - state.LastInsideCenterTime <= ModConfig.SafePlayerCartExitGraceSeconds())
             {
-                inTriggerZone = true;
+                inCartRange = true;
             }
 
-            if (!inTriggerZone)
+            if (!inCartRange)
             {
-                if (state.WasInTriggerZone)
+                if (state.WasInCartRange)
                 {
-                    DebugLog("Player left cart center stand zone: " + player.name);
+                    DebugLog("Player left cart floor range: " + player.name);
                 }
 
+                state.WasInCartRange = false;
                 state.WasInTriggerZone = false;
                 state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = 0.0f;
@@ -238,13 +221,20 @@ namespace ShrinkCart
                 return;
             }
 
+            state.WasInCartRange = true;
+            if (!inTriggerZone)
+            {
+                state.WasInTriggerZone = false;
+                state.TriggerZoneEnteredTime = 0.0f;
+                return;
+            }
+
             if (!state.WasInTriggerZone)
             {
                 state.WasInTriggerZone = true;
-                state.TriggeredThisStay = false;
                 state.TriggerZoneEnteredTime = now;
                 state.LastInsideCenterTime = now;
-                DebugLog("Player entered cart center stand zone: " + player.name);
+                DebugLog("Player entered cart floor trigger zone: " + player.name);
                 return;
             }
 
@@ -255,14 +245,13 @@ namespace ShrinkCart
             }
 
             state.TriggeredThisStay = true;
-            DebugLog("Player cart center stand timer completed: " + player.name);
+            DebugLog("Player cart floor trigger timer completed: " + player.name);
 
             if (state.ShrinkCartScaled)
             {
                 if (RestorePlayer(player.gameObject))
                 {
                     state.ShrinkCartScaled = false;
-                    PlayerScaleDeathSafety.UnmarkActive(player);
                     DebugLog("Restored player after standing in cart center: " + player.name);
                 }
 
@@ -278,7 +267,6 @@ namespace ShrinkCart
             if (ShrinkPlayer(player.gameObject))
             {
                 state.ShrinkCartScaled = true;
-                PlayerScaleDeathSafety.Mark(player);
                 DebugLog("Shrunk player after standing in cart center: " + player.name);
             }
         }
@@ -296,8 +284,8 @@ namespace ShrinkCart
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
             options.Duration = 0.0f;
             options.AllowedTargets = ScaleTargets.Players;
-            options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
-            options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
+            options.SuppressImpactFlash = true;
+            options.SuppressCameraShake = true;
             options.IgnoreBonkExpand = ModConfig.RestorePlayerOnDamage != null && !ModConfig.RestorePlayerOnDamage.Value;
             options.RejectExternalApply = false;
 
@@ -337,8 +325,8 @@ namespace ShrinkCart
                 {
                     ScaleOptions options = controller.CurrentOptions;
                     options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
-                    options.SuppressImpactFlash = ModConfig.HideScaleFlash.Value;
-                    options.SuppressCameraShake = ModConfig.HideScaleFlash.Value;
+                    options.SuppressImpactFlash = true;
+                    options.SuppressCameraShake = true;
                     ScaleManager.ForceUpdateOptions(target, options);
                 }
 
@@ -352,21 +340,36 @@ namespace ShrinkCart
             }
         }
 
-        private static bool IsPlayerInsideAnyCartCenter(PlayerAvatar player)
+        private static CartZoneResult GetPlayerCartZone(PlayerAvatar player)
         {
+            CartZoneResult result = new CartZoneResult();
+            Vector3 standPoint = GetPlayerStandPoint(player);
             foreach (CartState cartState in RegisteredCarts.Values)
             {
-                if (cartState != null && IsPlayerInsideCartCenter(player, cartState))
+                if (cartState == null)
                 {
-                    return true;
+                    continue;
+                }
+
+                CartZoneResult cartResult = GetPlayerCartZone(player, cartState, standPoint);
+                if (cartResult.InCartRange)
+                {
+                    result.InCartRange = true;
+                }
+
+                if (cartResult.InTriggerZone)
+                {
+                    result.InTriggerZone = true;
+                    return result;
                 }
             }
 
-            return false;
+            return result;
         }
 
-        private static bool IsPlayerInsideCartCenter(PlayerAvatar player, CartState cartState)
+        private static CartZoneResult GetPlayerCartZone(PlayerAvatar player, CartState cartState, Vector3 standPoint)
         {
+            CartZoneResult result = new CartZoneResult();
             Transform inCart = cartState.InCart;
             if (inCart == null && cartState.Cart != null)
             {
@@ -376,24 +379,27 @@ namespace ShrinkCart
 
             if (player == null || inCart == null)
             {
-                return false;
+                return result;
             }
 
-            return IsPointInsideCartCenterZone(GetPlayerStandPoint(player), inCart);
+            result.InCartRange = IsPointInsideCartFloorProjection(standPoint, inCart, 1.0f);
+            result.InTriggerZone = result.InCartRange &&
+                                   IsPointInsideCartFloorProjection(standPoint, inCart, CenterZoneHorizontalScale);
+            return result;
         }
 
-        private static bool IsPointInsideCartCenterZone(Vector3 point, Transform inCart)
+        private static bool IsPointInsideCartFloorProjection(Vector3 point, Transform inCart, float horizontalScale)
         {
             Vector3 local = Quaternion.Inverse(inCart.rotation) * (point - inCart.position);
-            Vector3 half = inCart.lossyScale;
-            float centerHalfX = Mathf.Max(Mathf.Abs(half.x) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
-            float centerHalfZ = Mathf.Max(Mathf.Abs(half.z) * CenterZoneHorizontalScale, MinimumCenterHalfExtent);
-            float halfY = Mathf.Abs(half.y);
+            Vector3 half = inCart.localScale * 0.5f;
+            float centerHalfX = Mathf.Max(Mathf.Abs(half.x) * horizontalScale, MinimumCenterHalfExtent);
+            float centerHalfZ = Mathf.Max(Mathf.Abs(half.z) * horizontalScale, MinimumCenterHalfExtent);
+            float floorY = -Mathf.Abs(half.y);
 
             return Mathf.Abs(local.x) <= centerHalfX &&
                    Mathf.Abs(local.z) <= centerHalfZ &&
-                   local.y >= -halfY - CenterZoneVerticalPaddingBelow &&
-                   local.y <= halfY + CenterZoneVerticalPaddingAbove;
+                   local.y >= floorY - FloorProjectionPaddingBelow &&
+                   local.y <= floorY + FloorProjectionStandingHeightAbove;
         }
 
         private static Transform GetInCartTransform(PhysGrabCart cart)
@@ -518,14 +524,7 @@ namespace ShrinkCart
 
         private static bool IsHostOrSingleplayer()
         {
-            try
-            {
-                return SemiFunc.IsMasterClientOrSingleplayer();
-            }
-            catch
-            {
-                return true;
-            }
+            return Authority.IsHostOrSingleplayer();
         }
 
         private static void DebugLog(string message)
