@@ -1,6 +1,6 @@
 ﻿{
     "name":  "ShrinkCart",
-    "version_number":  "0.2.34",
+    "version_number":  "0.2.35",
     "author":  "AngelcoMilk",
     "website_url":  "https://github.com/AngelcoMilk/ShrinkCart",
     "description":  "R.E.P.O. v0.4.4.x shrink-hauler cart with host-driven ScalerCore scaling, optional mass scaling, player cart-floor toggle, token box support, and vanilla cart collisions.",

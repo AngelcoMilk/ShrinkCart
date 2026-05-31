@@ -1,7 +1,6 @@
-# ShrinkCart v0.2.34
+# ShrinkCart v0.2.35
 
 适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运 mod。
-作者 / Author: **AngelcoMilk**
 
 ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤、主机决策，以及可选的玩家站车缩放和敌人进车秒杀。
 
@@ -42,9 +41,10 @@ Thunderstore/r2modman 安装时会自动拉取依赖。推荐房间内所有玩�
 
 ![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-### R.E.P.O. v0.4.4.x 特殊物品支持
+### R.E.P.O. v0.4.x 特殊物品支持
 
-R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.34 保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配，并会在原版购物车列表刷新时补处理漏掉的进车事件。
+R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；
+v0.2.35 保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配，并会在原版购物车列表刷新时补处理漏掉的进车事件。
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -78,7 +78,7 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.34 保留
 
 ## English
 
-ShrinkCart is a R.E.P.O. v0.4.4.x cart-scaling mod by **AngelcoMilk**.
+ShrinkCart is a cart-scaling hauling mod for R.E.P.O. v0.4.4.x.
 
 When supported objects are placed into a C.A.R.T. / shopping cart, ShrinkCart asks ScalerCore to shrink them for easier hauling. Objects restore to their original size after the host confirms they have truly left the cart. ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, host-side decisions, optional player cart-floor scaling, and enemy-in-cart instant kill.
 
@@ -119,9 +119,10 @@ Large, wide, tall, and very tall valuables shrink with their own category factor
 
 ![Large item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-### R.E.P.O. v0.4.4.x Special Item Support
+### R.E.P.O. v0.4.x Special Item Support
 
-R.E.P.O. v0.4.4.x special items are detected and scaled. v0.2.34 keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes, and can retry missed cart-enter events during vanilla cart list refreshes.
+Special items from newer R.E.P.O. versions can also be detected and scaled.
+v0.2.35 keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes, and can retry missed cart-enter events during vanilla cart list refreshes.
 
 ![R.E.P.O. 4.0 special item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
