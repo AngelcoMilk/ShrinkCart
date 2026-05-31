@@ -100,7 +100,7 @@ namespace ShrinkCart
 
         internal static void MarkObjectsSeenInCart(PhysGrabCart cart, List<PhysGrabObject> items)
         {
-            if (!IsHostOrSingleplayer() || items == null || TrackedObjects.Count == 0)
+            if (!IsHostOrSingleplayer() || items == null)
             {
                 return;
             }
@@ -120,6 +120,24 @@ namespace ShrinkCart
                 if (TrackedObjects.TryGetValue(target.GetInstanceID(), out tracked))
                 {
                     MarkTrackedInCart(tracked, now, cartId);
+                    continue;
+                }
+
+                if (EnemyInCartKillController.TryKill(item))
+                {
+                    continue;
+                }
+
+                if (!ModConfig.CartShrinkingEnabled.Value)
+                {
+                    continue;
+                }
+
+                ShrinkCategory category;
+                float factor;
+                if (TryGetShrinkData(item, out category, out factor))
+                {
+                    TrackOrShrink(item, category, factor, cart);
                 }
             }
         }
@@ -286,6 +304,7 @@ namespace ShrinkCart
 
             if (ScaleManager.IsScaled(target))
             {
+                TryTrackExistingShrinkCartScale(target, category, factor, cart, now);
                 return;
             }
 
@@ -348,6 +367,69 @@ namespace ShrinkCart
             ScheduleRestoreCheck(restoreDueTime);
 
             DebugLog("Shrunk " + target.name + " as " + category + " factor=" + factor.ToString("0.###"));
+        }
+
+        private static bool TryTrackExistingShrinkCartScale(
+            GameObject target,
+            ShrinkCategory category,
+            float factor,
+            PhysGrabCart cart,
+            float now)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            int id = target.GetInstanceID();
+            if (TrackedObjects.ContainsKey(id))
+            {
+                return true;
+            }
+
+            ScaleController controller = ScaleManager.GetController(target);
+            if (controller == null || !controller.IsScaled)
+            {
+                return false;
+            }
+
+            ScaleOptions options = controller.CurrentOptions;
+            if (!LooksLikeShrinkCartOptions(options, category, factor))
+            {
+                return false;
+            }
+
+            float restoreDueTime = now + ModConfig.SafeCartLeaveDebounceSeconds();
+            TrackedObjects[id] = new TrackedObject
+            {
+                Target = target,
+                LastSeenInCartTime = now,
+                RestoreCheckDueTime = restoreDueTime,
+                LastSeenCartId = cart == null ? 0 : cart.GetInstanceID(),
+                MarkedInCartThisPass = true,
+                Category = category
+            };
+            ScheduleRestoreCheck(restoreDueTime);
+            DebugLog("Adopted existing ShrinkCart-like scaled object for restore tracking: " + target.name);
+            return true;
+        }
+
+        private static bool LooksLikeShrinkCartOptions(ScaleOptions options, ShrinkCategory category, float factor)
+        {
+            if (!Mathf.Approximately(options.Factor, factor))
+            {
+                return false;
+            }
+
+            ScaleTargets expectedTargets = category == ShrinkCategory.ValuableBox
+                ? ScaleTargets.All
+                : ScaleTargets.Valuables | ScaleTargets.Items;
+
+            return options.AllowedTargets == expectedTargets &&
+                   options.SuppressImpactFlash &&
+                   options.SuppressCameraShake &&
+                   options.SuppressValueDropExpand == ModConfig.SuppressValuableDamageRestore.Value &&
+                   options.PreserveMass == ModConfig.ShouldPreserveMass();
         }
 
         private static void MarkTrackedInCart(TrackedObject tracked, float now, int cartId)

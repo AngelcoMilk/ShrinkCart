@@ -192,6 +192,11 @@ namespace ShrinkCart
             {
                 state.ShrinkCartScaled = false;
             }
+            else if (!state.ShrinkCartScaled && IsShrinkCartScaledPlayer(player.gameObject))
+            {
+                state.ShrinkCartScaled = true;
+                DebugLog("Adopted existing ShrinkCart-like player scale state: " + player.name);
+            }
 
             CartZoneResult zone = GetPlayerCartZone(player);
             bool inCartRange = zone.InCartRange;
@@ -338,6 +343,27 @@ namespace ShrinkCart
                 Plugin.Log.LogWarning("Failed to restore player from cart toggle: " + ex.Message);
                 return false;
             }
+        }
+
+        private static bool IsShrinkCartScaledPlayer(GameObject target)
+        {
+            if (target == null || !ScaleManager.IsScaled(target))
+            {
+                return false;
+            }
+
+            ScaleController controller = ScaleManager.GetController(target);
+            if (controller == null || !controller.IsScaled)
+            {
+                return false;
+            }
+
+            ScaleOptions options = controller.CurrentOptions;
+            return options.AllowedTargets == ScaleTargets.Players &&
+                   Mathf.Approximately(options.Factor, ModConfig.SafePlayerCartScaleFactor()) &&
+                   options.SuppressImpactFlash &&
+                   options.SuppressCameraShake &&
+                   !options.RejectExternalApply;
         }
 
         private static CartZoneResult GetPlayerCartZone(PlayerAvatar player)

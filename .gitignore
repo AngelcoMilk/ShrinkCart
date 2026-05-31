@@ -1,4 +1,4 @@
-﻿dist/
+dist/
 dist_package/
 *.pdb
 *.user
@@ -12,6 +12,5 @@ REPO_Data/
 Assembly-CSharp.dll
 
 # User-local generated profiles and exports.
-BepInEx/config/DGLabPunish/
 BepInEx/config/AngelcoMilk.ShrinkCart.cfg
 

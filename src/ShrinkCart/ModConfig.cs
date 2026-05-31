@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Reflection;
 using BepInEx.Configuration;
 using UnityEngine;
 
@@ -73,6 +75,9 @@ namespace ShrinkCart
         internal static ConfigEntry<bool> DebugLogging;
 
         internal static int ScalingConfigVersion;
+
+        private static readonly PropertyInfo ConfigFileOrphanedEntriesProperty =
+            typeof(ConfigFile).GetProperty("OrphanedEntries", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         internal static void Bind(ConfigFile config)
         {
@@ -538,7 +543,19 @@ namespace ShrinkCart
 
         private static bool RemoveDeprecatedEntry(ConfigFile config, string section, string key)
         {
-            return config.Remove(new ConfigDefinition(section, key));
+            ConfigDefinition definition = new ConfigDefinition(section, key);
+            bool removed = config.Remove(definition);
+
+            IDictionary orphanedEntries = ConfigFileOrphanedEntriesProperty == null
+                ? null
+                : ConfigFileOrphanedEntriesProperty.GetValue(config, null) as IDictionary;
+            if (orphanedEntries != null && orphanedEntries.Contains(definition))
+            {
+                orphanedEntries.Remove(definition);
+                removed = true;
+            }
+
+            return removed;
         }
 
         private static void WatchScaling<T>(ConfigEntry<T> entry)

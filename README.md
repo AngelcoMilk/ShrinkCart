@@ -1,9 +1,9 @@
-# ShrinkCart v0.2.33
+# ShrinkCart v0.2.34
 
-适配 R.E.P.O. 4.0 的购物车缩小搬运 mod。
+适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运 mod。
 作者 / Author: **AngelcoMilk**
 
-ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤、主机同步，以及可选的玩家站车缩放和敌人进车秒杀。
+ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤、主机决策，以及可选的玩家站车缩放和敌人进车秒杀。
 
 ## 依赖
 
@@ -20,7 +20,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。推荐房间内所有玩�
 - **玩家缩放**：默认开启，独立在“玩家缩放”配置分组中。开启后，玩家站在正式购物车中心区域一段时间会切换缩小/恢复；关闭时 ShrinkCart 不运行玩家扫描或玩家缩放逻辑。
 - **代币/外观箱支持**：新版本代币类箱子独立开关和倍率，默认倍率 `0.4`。
 - **特殊物品支持**：敌人球 Small/Medium/Big/Berserker 使用独立倍率；钱袋/Surplus 使用独立倍率；普通非贵重物默认不缩小。
-- **主机权威同步**：多人游戏中由主机配置决定缩放倍率、速度、特殊物品和恢复时机。
+- **主机决策 + ScalerCore 同步**：多人游戏中只有主机/单人执行缩小和恢复决策，最终大小由 ScalerCore 同步给客户端。
 
 ## 动图演示
 
@@ -42,9 +42,9 @@ Thunderstore/r2modman 安装时会自动拉取依赖。推荐房间内所有玩�
 
 ![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-### R.E.P.O. 4.0 特殊物品支持
+### R.E.P.O. v0.4.4.x 特殊物品支持
 
-R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.33 保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配。
+R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.34 保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配，并会在原版购物车列表刷新时补处理漏掉的进车事件。
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -66,19 +66,21 @@ R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；v0.2.33 保留
 ## 已知限制
 
 - 缩放动画和可选质量缩小由 ScalerCore 控制，ShrinkCart 不手动写入 `Rigidbody.mass`，只传递 `PreserveMass` 选项。
+- “启用重量随缩放降低”只在 ScalerCore 支持该对象质量缩放时生效；部分 ItemHandler 对象可能视觉缩小明显，但手感变化不明显。
 - ShrinkCart 不接管车对车物理碰撞，也不会使用穿透修正或速度钳制；车辆真实碰撞表现以原版为准。
 - 如果其他缩放类 mod 已经控制同一个对象，ShrinkCart 会尽量避免覆盖该对象。
 - 客户端未安装 ShrinkCart 时，仍可能看到 ScalerCore 默认闪光/声音；全员安装效果最稳定。
 - ShrinkCart 不 patch 死亡或复活流程。REPOFidelity 与提取点复活类 mod 的冲突请使用独立的 `ExtractionReviveFix`，不要在 ShrinkCart 内处理。
 - 多人中缩小和恢复由主机统一确认并通过 ScalerCore 同步，物品离车后可能略等原版购物车刷新和防抖确认再恢复，但所有客户端会跟随同一主机时机。
+- 同一 r2modman profile 里只应保留一个 ShrinkCart DLL；重复手动安装会导致 BepInEx 输出跳过重复插件的日志。
 
 ---
 
 ## English
 
-ShrinkCart is a R.E.P.O. 4.0 cart-scaling mod by **AngelcoMilk**.
+ShrinkCart is a R.E.P.O. v0.4.4.x cart-scaling mod by **AngelcoMilk**.
 
-When supported objects are placed into a C.A.R.T. / shopping cart, ShrinkCart asks ScalerCore to shrink them for easier hauling. Objects restore to their original size after the host confirms they have truly left the cart. ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, host-authoritative sync, optional player cart-floor scaling, and enemy-in-cart instant kill.
+When supported objects are placed into a C.A.R.T. / shopping cart, ShrinkCart asks ScalerCore to shrink them for easier hauling. Objects restore to their original size after the host confirms they have truly left the cart. ShrinkCart handles cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, host-side decisions, optional player cart-floor scaling, and enemy-in-cart instant kill.
 
 ## Dependencies
 
@@ -95,7 +97,7 @@ Thunderstore/r2modman installs dependencies automatically. For the most consiste
 - **Player scaling**: enabled by default in its own config section. A player standing in the center floor area of a regular cart for the configured duration toggles shrink/restore. When disabled, ShrinkCart does not run player scanning or player-scaling logic.
 - **Token/cosmetic box support**: token/cosmetic boxes use their own toggle and factor. Default factor is `0.4`.
 - **Special object support**: enemy orbs use independent enemy-orb factors; money bags / Surplus use their own factor; normal non-valuable objects do not shrink by default.
-- **Host-authoritative sync**: in multiplayer, the host decides scaling factors, speeds, special-object behavior, and restore timing. ScalerCore then syncs the final result to clients.
+- **Host decisions + ScalerCore sync**: in multiplayer, only the host/singleplayer side decides shrink and restore. ScalerCore syncs the final size to clients.
 
 ## GIF Demos
 
@@ -117,9 +119,9 @@ Large, wide, tall, and very tall valuables shrink with their own category factor
 
 ![Large item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-### R.E.P.O. 4.0 Special Item Support
+### R.E.P.O. v0.4.4.x Special Item Support
 
-R.E.P.O. 4.0 special items are detected and scaled. v0.2.33 keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes.
+R.E.P.O. v0.4.4.x special items are detected and scaled. v0.2.34 keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes, and can retry missed cart-enter events during vanilla cart list refreshes.
 
 ![R.E.P.O. 4.0 special item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -141,8 +143,10 @@ Default values: shrink speed `0.5`, restore speed `0.2`, leave-cart debounce `0.
 ## Known Limits
 
 - ScalerCore controls scaling animations and optional mass scaling. ShrinkCart does not manually write `Rigidbody.mass`; it only passes the `PreserveMass` option.
+- "Mass scaling with size" only has visible handling changes when ScalerCore supports mass scaling for that object. Some ItemHandler objects may shrink visually while feeling similar in hand.
 - ShrinkCart does not control cart-to-cart physics collision, does not run penetration correction, and does not clamp vehicle velocity. Real cart collision behavior stays vanilla.
 - If another scaling mod already controls the same object, ShrinkCart tries to avoid overriding it.
 - If a client does not install ShrinkCart, they may still see or hear ScalerCore default flash/sound effects. Full-room installation is recommended.
 - ShrinkCart does not patch death or revive flow. Use the separate `ExtractionReviveFix` for REPOFidelity and extraction-point revive compatibility.
 - In multiplayer, shrink and restore are confirmed by the host and synced through ScalerCore. Restore after leaving the cart may wait for vanilla cart refresh plus debounce, but all clients follow the same host timing.
+- Keep only one ShrinkCart DLL in the same r2modman profile. Duplicate manual installs can cause BepInEx to log skipped duplicate plugins.

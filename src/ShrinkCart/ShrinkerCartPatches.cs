@@ -60,7 +60,6 @@ namespace ShrinkCart
             CartRegistry.Reset();
             ValuableBoxScaleAdapter.Reset();
             EnemyInCartKillController.Reset();
-            HostConfigSync.Reset();
         }
     }
 
