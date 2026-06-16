@@ -11,7 +11,7 @@ namespace ShrinkCart
     {
         public const string PluginGuid = "AngelcoMilk.ShrinkCart";
         public const string PluginName = "ShrinkCart";
-        public const string PluginVersion = "0.2.35";
+        public const string PluginVersion = "0.2.45";
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
@@ -31,6 +31,7 @@ namespace ShrinkCart
             ValuableBoxScaleAdapter.RegisterHandler();
             ShrinkerCartController.Reset();
             PlayerCartScaleController.Reset();
+            DeadHeadCartScaleController.Reset();
             EnemyInCartKillController.Reset();
 
             _harmony = new Harmony(PluginGuid);
@@ -54,6 +55,7 @@ namespace ShrinkCart
             }
 
             ShrinkerCartController.Tick();
+            DeadHeadCartScaleController.Tick();
             bool playerScalingEnabled = hostOrSingleplayer && ModConfig.PlayerScalingEnabled();
             if (playerScalingEnabled)
             {
@@ -85,7 +87,10 @@ namespace ShrinkCart
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
+            DeadHeadCartScaleController.RestoreAll();
+            DeadHeadCartScaleController.Reset();
             CartRegistry.Reset();
+            EnemyInCartKillController.Reset();
             Authority.Reset();
 
             if (_harmony != null)

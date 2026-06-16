@@ -14,10 +14,24 @@ namespace ShrinkCart
         private const float MinimumCenterHalfExtent = 0.15f;
         private const float StandPointYOffset = 0.05f;
 
+        private enum PlayerCartScaleState
+        {
+            Normal,
+            Shrunk,
+            Grown
+        }
+
+        private enum PlayerCartNextAction
+        {
+            Shrink,
+            Grow
+        }
+
         private sealed class PlayerState
         {
             internal PlayerAvatar Player;
-            internal bool ShrinkCartScaled;
+            internal PlayerCartScaleState ScaleState;
+            internal PlayerCartNextAction NextAction;
             internal bool WasInCartRange;
             internal bool WasInTriggerZone;
             internal bool TriggeredThisStay;
@@ -151,7 +165,7 @@ namespace ShrinkCart
 
             foreach (PlayerState state in PlayerStates.Values)
             {
-                if (state != null && state.ShrinkCartScaled && state.Player != null)
+                if (state != null && state.ScaleState != PlayerCartScaleState.Normal && state.Player != null)
                 {
                     RestorePlayer(state.Player.gameObject);
                 }
@@ -188,14 +202,19 @@ namespace ShrinkCart
                 state.Player = player;
             }
 
-            if (state.ShrinkCartScaled && !ScaleManager.IsScaled(player.gameObject))
+            if (state.ScaleState != PlayerCartScaleState.Normal && !ScaleManager.IsScaled(player.gameObject))
             {
-                state.ShrinkCartScaled = false;
+                AdvanceCycleAfterRestore(state);
+                state.ScaleState = PlayerCartScaleState.Normal;
             }
-            else if (!state.ShrinkCartScaled && IsShrinkCartScaledPlayer(player.gameObject))
+            else if (state.ScaleState == PlayerCartScaleState.Normal)
             {
-                state.ShrinkCartScaled = true;
-                DebugLog("Adopted existing ShrinkCart-like player scale state: " + player.name);
+                PlayerCartScaleState adoptedState;
+                if (TryGetShrinkCartPlayerScaleState(player.gameObject, out adoptedState))
+                {
+                    state.ScaleState = adoptedState;
+                    DebugLog("Adopted existing ShrinkCart-like player scale state: " + player.name + " state=" + adoptedState);
+                }
             }
 
             CartZoneResult zone = GetPlayerCartZone(player);
@@ -252,12 +271,17 @@ namespace ShrinkCart
             state.TriggeredThisStay = true;
             DebugLog("Player cart floor trigger timer completed: " + player.name);
 
-            if (state.ShrinkCartScaled)
+            if (state.ScaleState == PlayerCartScaleState.Shrunk ||
+                state.ScaleState == PlayerCartScaleState.Grown)
             {
+                PlayerCartScaleState previousState = state.ScaleState;
                 if (RestorePlayer(player.gameObject))
                 {
-                    state.ShrinkCartScaled = false;
-                    DebugLog("Restored player after standing in cart center: " + player.name);
+                    state.ScaleState = PlayerCartScaleState.Normal;
+                    state.NextAction = previousState == PlayerCartScaleState.Shrunk
+                        ? PlayerCartNextAction.Grow
+                        : PlayerCartNextAction.Shrink;
+                    DebugLog("Restored player after standing in cart center: " + player.name + " next=" + state.NextAction);
                 }
 
                 return;
@@ -269,14 +293,38 @@ namespace ShrinkCart
                 return;
             }
 
-            if (ShrinkPlayer(player.gameObject))
+            PlayerCartScaleState targetState = state.NextAction == PlayerCartNextAction.Grow
+                ? PlayerCartScaleState.Grown
+                : PlayerCartScaleState.Shrunk;
+            float factor = targetState == PlayerCartScaleState.Grown
+                ? ModConfig.SafePlayerCartGrowFactor()
+                : ModConfig.SafePlayerCartScaleFactor();
+
+            if (ApplyPlayerScale(player.gameObject, factor, targetState))
             {
-                state.ShrinkCartScaled = true;
-                DebugLog("Shrunk player after standing in cart center: " + player.name);
+                state.ScaleState = targetState;
+                DebugLog("Applied player cart scale after standing in cart center: " + player.name + " state=" + targetState + " factor=" + factor.ToString("0.###"));
             }
         }
 
-        private static bool ShrinkPlayer(GameObject target)
+        private static void AdvanceCycleAfterRestore(PlayerState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            if (state.ScaleState == PlayerCartScaleState.Shrunk)
+            {
+                state.NextAction = PlayerCartNextAction.Grow;
+            }
+            else if (state.ScaleState == PlayerCartScaleState.Grown)
+            {
+                state.NextAction = PlayerCartNextAction.Shrink;
+            }
+        }
+
+        private static bool ApplyPlayerScale(GameObject target, float factor, PlayerCartScaleState targetState)
         {
             if (target == null)
             {
@@ -284,7 +332,7 @@ namespace ShrinkCart
             }
 
             ScaleOptions options = ScaleOptions.Default;
-            options.Factor = ModConfig.SafePlayerCartScaleFactor();
+            options.Factor = factor;
             options.Speed = ModConfig.SafeScaleSpeed();
             options.RestoreSpeed = ModConfig.SafeRestoreScaleSpeed();
             options.Duration = 0.0f;
@@ -299,14 +347,14 @@ namespace ShrinkCart
                 bool applied = ScaleManager.ApplyIfNotScaled(target, options);
                 if (!applied)
                 {
-                    DebugLog("ScalerCore rejected player cart shrink: " + target.name);
+                    DebugLog("ScalerCore rejected player cart scale: " + target.name + " state=" + targetState);
                 }
 
                 return applied;
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogWarning("Failed to shrink player standing in cart: " + ex.Message);
+                Plugin.Log.LogWarning("Failed to scale player standing in cart: " + ex.Message);
                 return false;
             }
         }
@@ -345,8 +393,9 @@ namespace ShrinkCart
             }
         }
 
-        private static bool IsShrinkCartScaledPlayer(GameObject target)
+        private static bool TryGetShrinkCartPlayerScaleState(GameObject target, out PlayerCartScaleState scaleState)
         {
+            scaleState = PlayerCartScaleState.Normal;
             if (target == null || !ScaleManager.IsScaled(target))
             {
                 return false;
@@ -359,11 +408,27 @@ namespace ShrinkCart
             }
 
             ScaleOptions options = controller.CurrentOptions;
-            return options.AllowedTargets == ScaleTargets.Players &&
-                   Mathf.Approximately(options.Factor, ModConfig.SafePlayerCartScaleFactor()) &&
-                   options.SuppressImpactFlash &&
-                   options.SuppressCameraShake &&
-                   !options.RejectExternalApply;
+            if (options.AllowedTargets != ScaleTargets.Players ||
+                !options.SuppressImpactFlash ||
+                !options.SuppressCameraShake ||
+                options.RejectExternalApply)
+            {
+                return false;
+            }
+
+            if (Mathf.Approximately(options.Factor, ModConfig.SafePlayerCartScaleFactor()))
+            {
+                scaleState = PlayerCartScaleState.Shrunk;
+                return true;
+            }
+
+            if (Mathf.Approximately(options.Factor, ModConfig.SafePlayerCartGrowFactor()))
+            {
+                scaleState = PlayerCartScaleState.Grown;
+                return true;
+            }
+
+            return false;
         }
 
         private static CartZoneResult GetPlayerCartZone(PlayerAvatar player)

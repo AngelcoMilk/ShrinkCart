@@ -566,6 +566,13 @@ namespace ShrinkCart
                 return false;
             }
 
+            if (item.GetComponent<PlayerDeathHead>() != null ||
+                item.GetComponentInParent<PlayerDeathHead>() != null ||
+                item.GetComponentInChildren<PlayerDeathHead>(true) != null)
+            {
+                return false;
+            }
+
             string cleanName = CleanName(item.name);
 
             if (IsPermanentlyExcludedCartItem(item, cleanName))

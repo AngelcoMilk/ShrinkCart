@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.35"
+$modVersion = "0.2.45"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -123,6 +123,8 @@ function Test-GameHookTargets {
         @{ Type = "ItemValuableBox"; Method = "Start"; Parameters = @() },
         @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
         @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
+        @{ Type = "PhysGrabObject"; Method = "DestroyPhysGrabObject"; Parameters = @() },
+        @{ Type = "PlayerDeathHead"; Method = "Revive"; Parameters = @() },
         @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
     )
     $requiredFields = @(
@@ -142,7 +144,12 @@ function Test-GameHookTargets {
         @{ Type = "PhysGrabCart"; Field = "haulCurrent" },
         @{ Type = "PhysGrabCart"; Field = "valueScreen" },
         @{ Type = "PlayerAvatar"; Field = "physObjectStander" },
-        @{ Type = "PlayerAvatar"; Field = "collider" }
+        @{ Type = "PlayerAvatar"; Field = "collider" },
+        @{ Type = "PlayerDeathHead"; Field = "physGrabObject" },
+        @{ Type = "PlayerDeathHead"; Field = "triggered" },
+        @{ Type = "PlayerDeathHead"; Field = "inExtractionPoint" },
+        @{ Type = "PlayerDeathHead"; Field = "inTruck" },
+        @{ Type = "PhysGrabObject"; Field = "impactDetector" }
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
@@ -215,6 +222,8 @@ function Test-ScalerCoreHookTargets {
         @{ Type = "ScalerCore.ScaleManager"; Method = "ForceUpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },
         @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "get_AllowDeadHeads"; Parameters = @() },
+        @{ Type = "ScalerCore.ScaleManager"; Method = "set_AllowDeadHeads"; Parameters = @("System.Boolean") },
         @{ Type = "ScalerCore.ScaleController"; Method = "get_CurrentOptions"; Parameters = @() },
         @{ Type = "ScalerCore.Handlers.ScaleHandlerRegistry"; Method = "Register"; Parameters = @("ScalerCore.Handlers.IScaleHandler", "System.Func`2<UnityEngine.GameObject,System.Boolean>", "System.Int32") }
     )
@@ -229,6 +238,8 @@ function Test-ScalerCoreHookTargets {
         @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressCameraShake" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "IgnoreBonkExpand" },
         @{ Type = "ScalerCore.ScaleOptions"; Field = "RejectExternalApply" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "AudioPresence" },
+        @{ Type = "ScalerCore.ScaleOptions"; Field = "EnemyPhysicalFactorCap" },
         @{ Type = "ScalerCore.ScaleTargets"; Field = "Players" }
     )
 

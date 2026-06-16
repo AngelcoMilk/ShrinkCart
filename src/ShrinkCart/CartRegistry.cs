@@ -76,7 +76,8 @@ namespace ShrinkCart
                 return;
             }
 
-            RemoveCartLikeItems(state, items);
+            RemoveBlockedItems(state, items);
+            DeadHeadCartScaleController.MarkObjectsSeenInCart(state.Cart, items);
             ShrinkerCartController.MarkObjectsSeenInCart(state.Cart, items);
         }
 
@@ -103,7 +104,7 @@ namespace ShrinkCart
             List<PhysGrabObject> items = GetItemsInCart(destinationState.Cart);
             if (items != null)
             {
-                RemoveCartLikeItems(destinationState, items);
+                RemoveBlockedItems(destinationState, items);
             }
 
             DebugLog("Blocked cart-like object from cart Add: " + item.name);
@@ -145,7 +146,7 @@ namespace ShrinkCart
             RemoveCartIds.Clear();
         }
 
-        private static void RemoveCartLikeItems(CartState state, List<PhysGrabObject> items)
+        private static void RemoveBlockedItems(CartState state, List<PhysGrabObject> items)
         {
             if (state == null || state.Cart == null || items == null)
             {
@@ -173,7 +174,7 @@ namespace ShrinkCart
             if (changed)
             {
                 RecalculateCartCounts(state.Cart);
-                DebugLog("Removed cart-like object from cart contents: " + state.Cart.name);
+                DebugLog("Removed blocked or compatibility object from cart contents: " + state.Cart.name);
             }
         }
 

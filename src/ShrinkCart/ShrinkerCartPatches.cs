@@ -56,10 +56,21 @@ namespace ShrinkCart
         {
             ShrinkerCartController.RestoreAll();
             PlayerCartScaleController.RestoreAll();
+            DeadHeadCartScaleController.RestoreAll();
+            DeadHeadCartScaleController.Reset();
             PlayerCartScaleController.Reset();
             CartRegistry.Reset();
             ValuableBoxScaleAdapter.Reset();
             EnemyInCartKillController.Reset();
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerDeathHead), "Revive")]
+    internal static class PlayerDeathHeadRevivePatch
+    {
+        private static void Prefix(PlayerDeathHead __instance)
+        {
+            DeadHeadCartScaleController.RestoreBeforeRevive(__instance);
         }
     }
 
