@@ -1,4 +1,4 @@
-# ShrinkCart v0.2.45
+# ShrinkCart v0.2.46
 
 适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运 mod。
 
@@ -7,7 +7,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 ## 依赖
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-1.0.1`
+- `Vippy-ScalerCore-1.0.2`
 - `nickklmao-REPOConfig-1.2.6`
 
 Thunderstore/r2modman 安装时会自动拉取依赖。推荐房间内所有玩家都安装 ShrinkCart 和这些依赖，缩放表现最一致。
@@ -46,7 +46,7 @@ Thunderstore/r2modman 安装时会自动拉取依赖。推荐房间内所有玩�
 ### R.E.P.O. v0.4.x 特殊物品支持
 
 R.E.P.O. 新版本的特殊物品同样可以被识别并缩小；
-v0.2.45 使用 ScalerCore 1.0.1 稳定 API，保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配，并会在原版购物车列表刷新时补处理漏掉的进车事件。第三方地图只要使用标准 `ValuableObject` / `ValuableVolume`，通常会按现有分类倍率处理。ScalerCore 1.0.1 修复了缩小贵重物的提取点检测偏移问题，靠近提取区时的判定更稳定。
+v0.2.46 使用 ScalerCore 1.0.2 稳定 API，保留 `CosmeticWorldObject` / `ItemValuableBox` 代币/外观箱适配，并会在原版购物车列表刷新时补处理漏掉的进车事件。第三方地图只要使用标准 `ValuableObject` / `ValuableVolume`，通常会按现有分类倍率处理。ScalerCore 1.0.2 保留 1.0.1 的缩小贵重物提取点检测偏移修复，并新增玩家增大后直接缩小的相机/FOV/碰撞残留修复、缩小玩家头部 bob 修复和首次缩放卡顿修复。
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -92,7 +92,7 @@ When supported objects are placed into a C.A.R.T. / shopping cart, ShrinkCart as
 ## Dependencies
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-1.0.1`
+- `Vippy-ScalerCore-1.0.2`
 - `nickklmao-REPOConfig-1.2.6`
 
 Thunderstore/r2modman installs dependencies automatically. For the most consistent multiplayer experience, all players should install ShrinkCart and its dependencies.
@@ -131,7 +131,7 @@ Large, wide, tall, and very tall valuables shrink with their own category factor
 ### R.E.P.O. v0.4.x Special Item Support
 
 Special items from newer R.E.P.O. versions can also be detected and scaled.
-v0.2.45 uses ScalerCore 1.0.1 stable APIs, keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes, and can retry missed cart-enter events during vanilla cart list refreshes. Third-party map objects that use standard `ValuableObject` / `ValuableVolume` are usually handled by the existing category factors. ScalerCore 1.0.1 fixes extraction-point detection offsets for shrunken valuables, making extraction-zone checks more stable near the extraction area.
+v0.2.46 uses ScalerCore 1.0.2 stable APIs, keeps support for `CosmeticWorldObject` / `ItemValuableBox` token and cosmetic boxes, and can retry missed cart-enter events during vanilla cart list refreshes. Third-party map objects that use standard `ValuableObject` / `ValuableVolume` are usually handled by the existing category factors. ScalerCore 1.0.2 keeps the extraction-point detection offset fix from 1.0.1 and adds fixes for switching grown players directly into shrink, shrunken-player head bob, and the first-scale hitch.
 
 ![R.E.P.O. 4.0 special item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 

@@ -1,12 +1,12 @@
 ﻿{
     "name":  "ShrinkCart",
-    "version_number":  "0.2.45",
+    "version_number":  "0.2.46",
     "author":  "AngelcoMilk",
     "website_url":  "https://github.com/AngelcoMilk/ShrinkCart",
     "description":  "R.E.P.O. v0.4.4.x shrink-hauler cart with host-driven ScalerCore scaling, default mass scaling, player shrink/grow cart cycle, token box support, and vanilla cart collisions.",
     "dependencies":  [
                          "BepInEx-BepInExPack-5.4.2305",
-                         "Vippy-ScalerCore-1.0.1",
+                         "Vippy-ScalerCore-1.0.2",
                          "nickklmao-REPOConfig-1.2.6"
                      ]
 }
