@@ -342,11 +342,11 @@ if ($PackageToDesktop) {
         Remove-Item -LiteralPath $packageStage -Recurse -Force
     }
 
-    New-Item -ItemType Directory -Force -Path (Join-Path $packageStage "BepInEx\plugins\$modName") | Out-Null
+    New-Item -ItemType Directory -Force -Path $packageStage | Out-Null
     Copy-Item -LiteralPath (Join-Path $distRoot "manifest.json") -Destination (Join-Path $packageStage "manifest.json") -Force
     Copy-Item -LiteralPath (Join-Path $distRoot "README.md") -Destination (Join-Path $packageStage "README.md") -Force
     Copy-Item -LiteralPath (Join-Path $distRoot "icon.png") -Destination (Join-Path $packageStage "icon.png") -Force
-    Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $packageStage "BepInEx\plugins\$modName\$modName.dll") -Force
+    Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $packageStage "$modName.dll") -Force
 
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -355,7 +355,7 @@ if ($PackageToDesktop) {
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "manifest.json"), "manifest.json") | Out-Null
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "README.md"), "README.md") | Out-Null
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "icon.png"), "icon.png") | Out-Null
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $pluginOut, "BepInEx/plugins/$modName/$modName.dll") | Out-Null
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $pluginOut, "$modName.dll") | Out-Null
     }
     finally {
         $zip.Dispose()
