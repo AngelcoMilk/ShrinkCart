@@ -6,6 +6,14 @@ dist_package/
 *.tmp
 *.log
 
+# User-local analysis tools and scratch output.
+.tools/
+tools/downloads/
+tools/output/
+decompiled/
+il-output/
+*.il
+
 # Local dependency/game files should not be committed.
 BepInEx/
 REPO_Data/

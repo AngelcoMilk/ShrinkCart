@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.46"
+$modVersion = "0.2.47"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -33,12 +33,20 @@ if (!(Test-Path $src)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ScalerCoreDll)) {
-    $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "ScalerCore.dll" -ErrorAction SilentlyContinue |
-        Sort-Object FullName -Descending |
+    $profileCandidate = Get-ChildItem -LiteralPath (Join-Path $R2Profile "BepInEx\plugins") -Recurse -Filter "ScalerCore.dll" -File -ErrorAction SilentlyContinue |
         Select-Object -First 1
 
-    if ($candidate -ne $null) {
-        $ScalerCoreDll = $candidate.FullName
+    if ($profileCandidate -ne $null) {
+        $ScalerCoreDll = $profileCandidate.FullName
+    } else {
+        $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "ScalerCore.dll" -File -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+
+        if ($candidate -ne $null) {
+            Write-Warning "ScalerCore was not deployed in the selected profile; falling back to shared cache candidate. Pass -ScalerCoreDll to make the version explicit."
+            $ScalerCoreDll = $candidate.FullName
+        }
     }
 }
 
@@ -47,12 +55,20 @@ if (!(Test-Path $ScalerCoreDll)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($REPOConfigDll)) {
-    $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "REPOConfig.dll" -ErrorAction SilentlyContinue |
-        Sort-Object FullName -Descending |
+    $profileCandidate = Get-ChildItem -LiteralPath (Join-Path $R2Profile "BepInEx\plugins") -Recurse -Filter "REPOConfig.dll" -File -ErrorAction SilentlyContinue |
         Select-Object -First 1
 
-    if ($candidate -ne $null) {
-        $REPOConfigDll = $candidate.FullName
+    if ($profileCandidate -ne $null) {
+        $REPOConfigDll = $profileCandidate.FullName
+    } else {
+        $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "REPOConfig.dll" -File -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+
+        if ($candidate -ne $null) {
+            Write-Warning "REPOConfig was not deployed in the selected profile; falling back to shared cache candidate. Pass -REPOConfigDll to make the version explicit."
+            $REPOConfigDll = $candidate.FullName
+        }
     }
 }
 

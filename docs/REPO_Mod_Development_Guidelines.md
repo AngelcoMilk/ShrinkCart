@@ -247,7 +247,9 @@ UI 面板应显示：
 
 ## 9. 构建与发布
 
-发布包结构建议：
+### 9.1 Thunderstore 官方包结构
+
+ZIP 根目录必须直接包含以下三个**大小写敏感**的文件名，不能先套一层文件夹：
 
 ```text
 manifest.json
@@ -257,28 +259,174 @@ BepInEx/plugins/YourMod/YourMod.dll
 BepInEx/plugins/YourMod/YourDependency.dll
 ```
 
-`icon.png` 建议为 `256x256` PNG。
+`CHANGELOG.md` 可选。官方当前文档给出的软包体积上限约为 `5,242,880,000` bytes，但发布物仍应保持最小化。
 
-README 应简短说明：
+强制要求：
 
-- Mod 是什么。
-- 作者。
-- 依赖。
-- 快速使用方式。
-- 默认键位。
-- 已知限制。
-- 安全注意事项。
+- `icon.png` 必须是**精确 256x256** 的 PNG，不只是“建议”。
+- `README.md` 必须可按 UTF-8 解码；上传前使用 Thunderstore Markdown Preview 检查渲染。
+- ZIP 内的 `icon.png`、`README.md`、`manifest.json` 必须直接位于根目录。
+- 文件名大小写敏感；不要写成 `readme.md`、`Manifest.json` 或 `Icon.png`。
+
+### 9.2 manifest.json 约束
+
+必需字段为 `name`、`description`、`version_number`、`dependencies`、`website_url`。没有网站时也保留 `"website_url": ""`。
+
+- `name`：只允许 `a-z A-Z 0-9 _`，长度 1–128。
+- `description`：最长 250 字符。
+- `version_number`：必须是三段 `Major.Minor.Patch`，例如 `0.2.46`。
+- `dependencies`：每项格式为 `{team name}-{package name}-{package version}`，依赖版本同样使用三段版本号。
+- 更新包时必须递增版本；Thunderstore 展示最高版本号。
+
+本仓库可运行：
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\Test-DevelopmentEnvironment.ps1
+```
+
+验证 manifest、UTF-8 README、256x256 PNG 和本地开发依赖。打包后还应列出 ZIP 条目，人工确认没有额外顶层目录。
+
+### 9.3 禁止进入发布包的内容
 
 不要把这些内容放进发布包：
 
 - `Assembly-CSharp.dll`
 - Unity 游戏原始 DLL
 - ripped 游戏资源
-- patched Unity 工程
+- patched Unity 工程或 patched 游戏程序集
 - 反编译导出的游戏源码
-- 本地用户配置或 token
+- 本地用户配置、日志或 token
 
-## 10. 游戏更新后的维护流程
+## 10. Thunderstore API 使用准则
+
+官方 Swagger UI 位于：
+
+```text
+https://thunderstore.io/api/docs/
+```
+
+该页面实际读取的机器可读 schema 是：
+
+```text
+https://thunderstore.io/api/docs/?format=openapi
+```
+
+返回类型为 `application/openapi+json`，当前 schema 是 Swagger/OpenAPI 2.0、标题 `Thunderstore API v1`。官方 schema 自己明确警告：**自动生成且不完全准确**。因此：
+
+- API 集成必须以实际响应、状态码和官方网页行为再次验证，不能只依赖生成 schema。
+- 不要猜测 `/swagger.json`、`/openapi.json` 或 `/api/schema/`；这些路径不等于文档 UI 当前使用的 schema。
+- schema 顶层声明 Basic Authentication，但这不代表每个读取端点都必须认证；按每个操作的实际行为测试。
+- 不要在源码、manifest、日志或 issue 中提交用户名、密码、session、token 或 Authorization header。
+
+### 10.1 接口稳定性分类
+
+当前 schema 主要包含：
+
+- `/api/v1/package/` 与 community-scoped `/c/{community_identifier}/api/v1/package/`：包列表/读取。
+- `/api/v1/package-metrics/...`：包与版本指标。
+- `/api/v1/current-user/info/`、评分和 bot 管理操作：用户或写操作，按需认证并最小授权。
+- `/api/experimental/...`：社区、frontend、package、wiki、submission、validation、usermedia 等实验接口。
+- `/api/cyberstorm/...`：Cyberstorm 前端相关接口。
+
+开发准则：
+
+1. 优先使用满足需求的 `/api/v1/` 读取接口。
+2. `/api/experimental/` 和 `/api/cyberstorm/` 视为不稳定实现细节；调用方必须容忍字段增删、状态码变化和接口迁移。
+3. 发布上传、异步 submission、wiki、评分、审核等写操作不得在构建脚本中默认执行；必须显式启用并保护凭据。
+4. 为 HTTP 调用设置超时、清晰的 User-Agent、有限重试和失败降级；尊重 `429` 与服务端错误。
+5. 缓存公开元数据，避免在游戏 `Update()` 或高频事件中请求 Thunderstore。
+6. 发布前重新下载 schema 并复核所用端点；不要把下载的动态 schema 当作仓库内永久真相。
+
+示例（只读取 schema）：
+
+```powershell
+Invoke-RestMethod -Uri "https://thunderstore.io/api/docs/?format=openapi"
+```
+
+官方参考：
+
+- API docs: <https://thunderstore.io/api/docs/>
+- Creating a Package: <https://wiki.thunderstore.io/mods/creating-a-package>
+
+## 11. Unity/.NET 反编译与 IL 工具链
+
+仓库脚本和完整命令见 [`tools/README.md`](../tools/README.md)。工具安装到 `%LOCALAPPDATA%\Programs`，不把第三方二进制提交到仓库。
+
+### 11.1 工具选择
+
+- **ILSpy**：Windows 首选；查看 C#、IL、引用、调用关系和程序集元数据。
+- **dnSpyEx**：传统 dnSpy 已停止维护，使用维护分支 dnSpyEx；适合 IL/C# 浏览和需要调试器工作流的场景。
+- **AvaloniaILSpy**：ILSpy 的跨平台 UI 备选，主要用于 macOS/Linux；Windows 通常无需与原生 ILSpy 重复安装。
+- **MonoMod**：用于 `DebugIL`、`HookGen`、RuntimeDetour/IL 辅助分析。它不是 Java 工具，不要求 Java。独立 release 较旧，新增运行时依赖时应锁定并测试 NuGet 版本，不能无审查升级。
+
+Windows 安装：
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\Setup-ModAnalysisTools.ps1
+# 可选：
+powershell.exe -ExecutionPolicy Bypass -File .\tools\Setup-ModAnalysisTools.ps1 -InstallDnSpyEx
+```
+
+### 11.2 Harmony Transpiler 的 IL 分析流程
+
+只有 Prefix/Postfix 无法实现需求时才写 Transpiler：
+
+1. 在 ILSpy/dnSpyEx 中定位完整方法签名并切换到 IL 视图。
+2. 记录目标逻辑前后的 opcode、operand、分支和局部变量用途。
+3. 使用语义锚点匹配，例如稳定的方法调用或字段访问；不要依赖固定 IL offset、局部变量编号或单一短指令序列。
+4. 明确预期匹配次数；匹配数量不符时记录警告并安全放弃 patch，而不是产生损坏 IL。
+5. 检查堆栈平衡、标签、异常处理块和所有控制流分支。
+6. 游戏更新后重新比较 IL，并运行 `build.ps1` 中的 Cecil hook 校验及游戏内 smoke test。
+
+反编译 C# 只帮助理解语义，Transpiler 的事实来源是实际 IL。MonoMod/DebugIL 只对用户本地的临时副本操作，不原地修改 Steam 游戏程序集。
+
+### 11.3 GTFO 的 BepInExPack 只能作为跨游戏对照
+
+已核对 Thunderstore 的 GTFO 包页和 `BepInEx-BepInExPack_GTFO-3.2.2` 下载包。它不是通用 BepInExPack 的同名版本，也不是 R.E.P.O. 可替换依赖：
+
+- 最新包版本为 `3.2.2`，manifest 无额外 Thunderstore dependencies；README 标明基础为 **BepInEx 6.0.0-be.665**。
+- GTFO 是 IL2CPP 工作流；包中包含 `BepInEx.Unity.IL2CPP.dll`、Il2CppInterop/Cpp2IL、随包 CoreCLR/.NET 运行时，以及 `GTFO-API.dll` 0.5.0。
+- 包内容位于 `BepInExPack_GTFO/` 子目录，README 的手动安装步骤明确要求先解压，再把该目录的内容复制到 GTFO 游戏根目录。
+- Thunderstore 发布元数据仍然位于 ZIP 根：`manifest.json`、`README.md`、`icon.png`。因此“发布元数据必须在 ZIP 根”与“payload 可按安装器约定放在子目录”可以同时成立。
+- 该包使用 bleeding-edge BepInEx 6，并明确提示不保证稳定；不能把其程序集、GTFO-API、CoreCLR payload、IL2CPP hook 方法或编译目标照搬到 R.E.P.O.
+
+ShrinkCart 当前目标是 R.E.P.O. 的 Mono/BepInEx 5 配置，manifest 应继续依赖社区对应的 `BepInEx-BepInExPack-5.4.2305`。开发和构建引用必须来自 R.E.P.O. profile 与 R.E.P.O. 的 `Assembly-CSharp.dll`；不同社区中团队名相同不表示二进制兼容。
+
+可复用的是方法而不是文件：锁定框架版本、记录上游 build、提供游戏专用默认配置、说明手动安装的目录边界、在 changelog 中标出 breaking runtime transitions，并保持游戏 API 适配层与通用插件代码分离。
+
+官方/一手来源：
+
+- GTFO package page: <https://thunderstore.io/c/gtfo/p/BepInEx/BepInExPack_GTFO/>
+- Thunderstore package API metadata: <https://thunderstore.io/api/experimental/package/BepInEx/BepInExPack_GTFO/>
+- Package manifest/README: 来自该页面指向的官方 `3.2.2` 下载包，仅在本地临时目录检查，未提交二进制。
+
+## 12. 本地 mod 管理器档案检查
+
+本机可能同时安装 r2modman 与 Thunderstore Mod Manager，但 ShrinkCart 当前构建路径使用 r2modman 的：
+
+```text
+%APPDATA%\r2modmanPlus-local\REPO
+```
+
+只读盘点命令见 [`tools/Get-LocalREPOProfileInventory.ps1`](../tools/Get-LocalREPOProfileInventory.ps1)：
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\Get-LocalREPOProfileInventory.ps1 `
+  -ProfileName "REPO" -IncludeDisabled
+```
+
+判断规则：
+
+1. 以每个 profile 的 `mods.yml` 为已记录版本和 enabled 状态的主要来源。
+2. `cache` 是多 profile 共用缓存，会保留旧版本和手动导入包；看到 DLL/manifest 不等于当前 profile 已启用。
+3. 如需确认部署结果，再只读核对该 profile 的 `BepInEx\plugins`、`patchers` 与 `core`；不要把这些文件复制进仓库。
+4. 不提交 `mods.yml`、profile/export、配置、日志、缓存清单或本地绝对路径。文档只保留与依赖兼容性直接相关的脱敏结论。
+
+本次脱敏核对结论：相关开发 profile 记录了 ShrinkCart `0.2.46`、BepInExPack `5.4.2305`、ScalerCore `1.0.4`、REPOConfig `1.2.6`，均启用。它满足 manifest 的 BepInEx `5.4.2305` 和 REPOConfig `1.2.6`。ShrinkCart `0.2.47` 发布适配已将 ScalerCore 最低依赖提升到 `1.0.4`，以采用其针对最新游戏玩家移动调用的缩放修复。
+
+构建脚本必须避免“从共享 cache 按路径倒序取第一个 DLL”所带来的隐式版本选择。优先从目标 profile 的 `BepInEx\plugins` 解析已启用依赖；若显式传入 `-ScalerCoreDll` / `-REPOConfigDll`，应把实际路径和版本打印在构建日志中。多人兼容测试应另建最小 profile，避免把大型日常 mod 集合的副作用误判为 ShrinkCart 问题。
+
+## 13. 游戏更新后的维护流程
 
 游戏更新后按顺序检查：
 
@@ -305,7 +453,7 @@ PlayerAvatar.Slide
 PlayerController.Update
 ```
 
-## 11. 最小质量门槛
+## 14. 最小质量门槛
 
 提交或发布前至少确认：
 
@@ -319,7 +467,7 @@ PlayerController.Update
 - 断线、异常、配置错误不会导致游戏崩溃。
 - 发布包不包含游戏专有文件。
 
-## 12. 推荐开发流程
+## 15. 推荐开发流程
 
 ```text
 确认需求
