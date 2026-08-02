@@ -8,7 +8,8 @@
 <br>
 适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组——物品进车自动缩小，离车恢复原尺寸
 
-> ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸。底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤、主机决策，以及可选的玩家站车缩小/增大循环、死亡头颅进车缩小和敌人进车秒杀。
+> ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸
+底层缩放由 ScalerCore 负责，ShrinkCart 负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤、主机决策，以及可选的玩家站车缩小/增大循环、死亡头颅进车缩小和敌人进车秒杀。
 
 ---
 
@@ -207,7 +208,8 @@ DebugLogging = false
 <br>
 A cart-scaling hauling mod for R.E.P.O. v0.4.4.x — items shrink automatically when placed into the cart and restore to full size after leaving
 
-> ShrinkCart shrinks supported objects when placed into a C.A.R.T. / shopping cart and restores them after they truly leave. ScalerCore handles the actual scaling; ShrinkCart manages cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, host-side decisions, and optional player shrink/grow cycling, dead-head cart shrinking, and enemy-in-cart instant kill.
+> ShrinkCart shrinks supported objects when placed into a C.A.R.T. / shopping cart and restores them after they truly leave
+ScalerCore handles the actual scaling; ShrinkCart manages cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, host-side decisions, and optional player shrink/grow cycling, dead-head cart shrinking, and enemy-in-cart instant kill.
 
 ---
 
