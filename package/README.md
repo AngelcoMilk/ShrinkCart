@@ -215,6 +215,8 @@ DebugLogging = false
 
 ### 致谢
 
+累积下载突破十万，感谢每一位使用者的信任与社区的持续付出 ₍ᐢ.ˬ.ᐢ₎♡
+
 `BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
 
 </details>
@@ -433,6 +435,8 @@ Config Language = 中文
 ---
 
 ### Credits
+
+Over 100,000 downloads — thank you for the trust and community support ₍ᐢ.ˬ.ᐢ₎♡
 
 `BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
 
