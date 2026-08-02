@@ -1,10 +1,13 @@
 # ShrinkCart v0.2.47
 
-> 适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组——物品进车自动缩小，离车恢复原尺寸，玩家站车可循环缩放
-
 ---
 
-## 中文 (ZH)
+<details open>
+<summary><b>中文 / Chinese</b> (click to expand English)</summary>
+
+<br>
+
+> 适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组——物品进车自动缩小，离车恢复原尺寸，玩家站车可循环缩放
 
 ### 功能
 
@@ -207,9 +210,14 @@ DebugLogging = false
 - 死亡/复活流程冲突请使用独立的 `ExtractionReviveFix`（如 REPOFidelity 与提取点复活类 mod），不要在 ShrinkCart 内处理
 - 同一 r2modman profile 只保留一个 ShrinkCart DLL，重复手动安装会导致 BepInEx 输出跳过重复插件的日志
 
+</details>
+
 ---
 
-## English
+<details>
+<summary><b>English</b> (click to expand)</summary>
+
+<br>
 
 ShrinkCart is a cart-scaling hauling mod for R.E.P.O. v0.4.4.x. When supported objects are placed into a C.A.R.T. / shopping cart, ShrinkCart asks ScalerCore to shrink them for easier hauling. Objects restore to their original size after the host confirms they have truly left the cart.
 
@@ -413,3 +421,5 @@ DebugLogging = false
 - Third-party map valuables are handled through vanilla `ValuableObject` recognition; non-valuable mechanisms and map structures are not forced into scaling for compatibility
 - For death/revive flow conflicts (e.g. REPOFidelity and extraction-point revive mods), use the separate `ExtractionReviveFix`; do not handle them inside ShrinkCart
 - Keep only one ShrinkCart DLL in the same r2modman profile. Duplicate manual installs can cause BepInEx to log skipped duplicate plugins
+
+</details>
