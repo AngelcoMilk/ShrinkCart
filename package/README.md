@@ -215,7 +215,8 @@ DebugLogging = false
 
 ### 致谢
 
-累积下载突破十万，感谢每一位使用者的信任与社区的持续付出 ₍ᐢ.ˬ.ᐢ₎♡
+累积下载突破十万，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
+遇到问题欢迎来 [GitHub Issues](https://github.com/AngelcoMilk/ShrinkCart/issues) 反馈，这个模组会持续维护下去
 
 `BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
 
@@ -436,7 +437,8 @@ Config Language = 中文
 
 ### Credits
 
-Over 100,000 downloads — thank you for the trust and community support ₍ᐢ.ˬ.ᐢ₎♡
+Over 100,000 downloads — thank you for the trust and community support (◍•ᴗ•◍)❤
+Found an issue? Open one on [GitHub](https://github.com/AngelcoMilk/ShrinkCart/issues) — this mod is actively maintained
 
 `BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
 
