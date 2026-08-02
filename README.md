@@ -9,7 +9,7 @@
 
 > 战利品太多，购物车装不下？放进去的东西会自动缩小，推着就走，拿出来就恢复原样
 
-ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身由 ScalerCore 完成，ShrinkCart 负责在物品放进 C.A.R.T / 购物车时触发缩小、在物品离开购物车后恢复原尺寸，并处理分类倍率、边缘防抖、恢复冷却、商店用品过滤等细节
+ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 完成，ShrinkCart 负责在物品放进 C.A.R.T / 购物车时触发缩小、在物品离开购物车后恢复原尺寸，并处理分类倍率、边缘防抖、恢复冷却、商店用品过滤等细节
 
 ### 功能
 
@@ -107,7 +107,7 @@ ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身�
 **前置依赖**（Thunderstore/r2modman 安装时自动拉取）：
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-1.0.4`
+- [Vippy-ScalerCore-1.0.4](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)
 - `nickklmao-REPOConfig-1.2.6`
 
 **推荐**：通过 Thunderstore Mod Manager / r2modman 安装
@@ -225,7 +225,7 @@ DebugLogging = false
 
 > Too much loot, not enough cart? Items you put inside shrink automatically — haul them away, and they pop back to full size when they leave
 
-ShrinkCart is a cart-scaling hauling mod for R.E.P.O. v0.4.4.x. ScalerCore does the actual scaling; ShrinkCart triggers it when supported objects enter a C.A.R.T. / shopping cart, restores them once they truly leave, and handles category factors, edge debounce, restore cooldowns, and shop-item filtering
+ShrinkCart is a cart-scaling hauling mod for R.E.P.O. v0.4.4.x. [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) does the actual scaling; ShrinkCart triggers it when supported objects enter a C.A.R.T. / shopping cart, restores them once they truly leave, and handles category factors, edge debounce, restore cooldowns, and shop-item filtering
 
 ### Features
 
@@ -323,7 +323,7 @@ Installing is easy:
 **Dependencies** (installed automatically by Thunderstore / r2modman):
 
 - `BepInEx-BepInExPack-5.4.2305`
-- `Vippy-ScalerCore-1.0.4`
+- [Vippy-ScalerCore-1.0.4](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)
 - `nickklmao-REPOConfig-1.2.6`
 
 **Recommended**: Install via Thunderstore Mod Manager / r2modman
