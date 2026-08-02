@@ -16,13 +16,12 @@
 **购物车缩小搬运**
 
 - 支持的物品放入 C.A.R.T / 购物车后自动缩小，拿出并离车后恢复
-- 缩放由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 提供，本模组只看一件事：物品进车了？缩。离开购物车了？恢复
+- 缩放由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 提供
 
 **可配置物品缩放**
 
-- 枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品默认保持原尺寸，不影响战斗、治疗和工具使用；可在配置中开启「启用商店用品缩小」并使用商店用品倍率
-- 新版本代币/外观箱有独立开关和倍率，默认 `0.4`
-- 敌人球 Small/Medium/Big/Berserker 使用独立倍率；钱袋/Surplus 使用独立倍率
+- 枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品默认保持原尺寸，不影响战斗、治疗和工具使用
+- 敌人球和钱袋使用独立倍率
 - 普通非贵重物默认不缩小
 
 **玩家缩放**
@@ -201,10 +200,10 @@ DebugLogging = false
 
 ### 致谢
 
-累积下载突破十万，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
+累积下载突破 `100K`，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
 遇到问题欢迎来 [GitHub Issues](https://github.com/AngelcoMilk/ShrinkCart/issues) 反馈，这个模组会持续维护下去
 
-`BepInEx` · `Harmony` · `[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)` · `REPOConfig` · `Thunderstore`
+`BepInEx` · `Harmony` · [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) · `REPOConfig` · `Thunderstore`
 
 </details>
 
@@ -412,6 +411,6 @@ Config Language = 中文
 Over 100,000 downloads — thank you for the trust and community support (◍•ᴗ•◍)❤
 Found an issue? Open one on [GitHub](https://github.com/AngelcoMilk/ShrinkCart/issues) — this mod is actively maintained
 
-`BepInEx` · `Harmony` · `[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)` · `REPOConfig` · `Thunderstore`
+`BepInEx` · `Harmony` · [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) · `REPOConfig` · `Thunderstore`
 
 </details>
