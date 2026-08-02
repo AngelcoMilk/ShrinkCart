@@ -16,7 +16,7 @@
 **购物车缩小搬运**
 
 - 支持的物品放入 C.A.R.T / 购物车后自动缩小，拿出并离车后恢复
-- 底层缩放由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 负责，本模组负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤和主机决策
+- 缩放由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 提供，本模组只看一件事：物品进车了？缩。离开购物车了？恢复
 
 **可配置物品缩放**
 
@@ -31,13 +31,13 @@
 
 > 玩家站在正式购物车中心区域一段时间，会按「原样 → 缩小 → 原样 → 增大 → 原样」循环
 
-- 关闭「启用玩家缩放」后，不再运行玩家扫描或玩家缩放逻辑
+- 不需要时随时在配置中关闭
 
 **敌人进车秒杀**
 
 默认开启：
 
-- 敌人进入购物车时立刻死亡（复刻 ShrinkerCartPlus 行为）
+- 敌人进入购物车时立刻死亡
 
 **主机决策 + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 同步**
 
@@ -56,13 +56,13 @@
 
 #### 敌人球和钱袋会缩小
 
-敌人球使用独立的敌人球配置组；钱袋/SurplusValuable 使用特殊物品配置组
+敌人球和钱袋各有独立的缩小倍率，互不影响
 
 ![敌人球和 Surplus 缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-enemy-orb-surplus-scaled.gif)
 
 #### 大型贵重物会缩小
 
-大型、宽型、高型、超高型贵重物按各自分类倍率缩小，适合搬运原本难以放进车里的物品
+大型、宽型、高型、超高型贵重物都会缩小，方便搬运原本难以放进车里的物品
 
 ![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
@@ -224,7 +224,7 @@ DebugLogging = false
 **Cart Shrink Hauling**
 
 - Supported objects shrink when placed into a C.A.R.T. / shopping cart and restore after leaving
-- [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) handles the actual scaling; this mod manages cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, and host-side decisions
+- [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) handles the scaling. This mod watches one thing: item enters the cart? Shrink. Leaves for real? Restore.
 
 **Configurable Item Scaling**
 
@@ -239,13 +239,13 @@ Enabled by default, in its own "Player Scaling" config section:
 
 > Standing in the cart center area for the configured duration cycles normal → shrink → normal → grow → normal
 
-- When disabled, ShrinkCart does not run player scanning or player-scaling logic
+- Turn it off in config whenever you want
 
 **Enemy Instant Kill in Cart**
 
 Enabled by default:
 
-- Enemies die when entering a cart (mirrors ShrinkerCartPlus behavior)
+- Enemies die when entering a cart
 
 **Host Decisions + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) Sync**
 
@@ -264,13 +264,13 @@ Shop items such as guns and medkits are not shrunk by default, so combat, healin
 
 #### Enemy Orbs And Surplus Shrink
 
-Enemy orbs use the enemy-orb config group. Money bags / SurplusValuable use the special-object config group
+Enemy orbs and money bags each have their own scale factors
 
 ![Enemy orb and Surplus scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-enemy-orb-surplus-scaled.gif)
 
 #### Large Valuables Shrink
 
-Large, wide, tall, and very tall valuables shrink with their own category factors, making oversized valuables easier to carry in carts
+Large, wide, tall, and very tall valuables all shrink — easy to haul
 
 ![Large item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
