@@ -39,10 +39,10 @@
 
 - 敌人进入购物车时立刻死亡（复刻 ShrinkerCartPlus 行为）
 
-**主机决策 + ScalerCore 同步**
+**主机决策 + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 同步**
 
 - 多人游戏中只有主机/单人执行缩小和恢复决策
-- 最终大小由 ScalerCore 同步给客户端
+- 最终大小由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 同步给客户端
 
 ---
 
@@ -68,7 +68,7 @@
 
 #### R.E.P.O. v0.4.x 特殊物品支持
 
-新版本的特殊物品同样可以被识别并缩小。v0.2.47 将最低依赖更新到 ScalerCore 1.0.4 并继续使用其稳定强类型 API，ScalerCore 1.0.4 修复了最新游戏版本中玩家缩放移动速度调整调用缺失的问题，改善了玩家站车循环兼容性。代币/外观箱适配、购物车列表刷新漏事件补处理与第三方地图贵重物分类支持均已保留
+新版本的特殊物品同样可以被识别并缩小。v0.2.47 将最低依赖更新到 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 并继续使用其稳定强类型 API，[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 修复了最新游戏版本中玩家缩放移动速度调整调用缺失的问题，改善了玩家站车循环兼容性。代币/外观箱适配、购物车列表刷新漏事件补处理与第三方地图贵重物分类支持均已保留
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -201,10 +201,10 @@ DebugLogging = false
 
 ### 已知限制
 
-- 缩放动画和可选质量缩小由 ScalerCore 控制，ShrinkCart 不手动写入 `Rigidbody.mass`，只传递 `PreserveMass` 选项
+- 缩放动画和可选质量缩小由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 控制，ShrinkCart 不手动写入 `Rigidbody.mass`，只传递 `PreserveMass` 选项
 - 玩家增大只属于玩家站车循环，不会让普通物品、贵重物、敌人球或车辆变大
 - 死亡头颅缩小默认关闭；开启后 ShrinkCart 只恢复自己缩小过的头颅，并在 `PlayerDeathHead.Revive` 前做窄范围恢复，不接管复活流程
-- 「启用重量随缩放降低」只在 ScalerCore 支持质量缩放时生效；部分 ItemHandler 对象可能视觉缩小明显但手感变化不明显
+- 「启用重量随缩放降低」只在 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 支持质量缩放时生效；部分 ItemHandler 对象可能视觉缩小明显但手感变化不明显
 - ShrinkCart 不接管车对车物理碰撞，不使用穿透修正或速度钳制，车辆真实碰撞表现以原版为准
 - 其他缩放类 mod 已控制同一对象时，ShrinkCart 会尽量避免覆盖
 - 第三方地图新增的标准贵重物默认按原版 `ValuableObject` 识别；非贵重机关和地图结构物不会被强制缩放
@@ -218,7 +218,7 @@ DebugLogging = false
 累积下载突破十万，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
 遇到问题欢迎来 [GitHub Issues](https://github.com/AngelcoMilk/ShrinkCart/issues) 反馈，这个模组会持续维护下去
 
-`BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
+`BepInEx` · `Harmony` · `[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)` · `REPOConfig` · `Thunderstore`
 
 </details>
 
@@ -261,10 +261,10 @@ Enabled by default:
 
 - Enemies die when entering a cart (mirrors ShrinkerCartPlus behavior)
 
-**Host Decisions + ScalerCore Sync**
+**Host Decisions + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) Sync**
 
 - In multiplayer, only the host / singleplayer side decides shrink and restore
-- ScalerCore syncs the final size to all clients
+- [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) syncs the final size to all clients
 
 ---
 
@@ -290,7 +290,7 @@ Large, wide, tall, and very tall valuables shrink with their own category factor
 
 #### R.E.P.O. v0.4.x Special Item Support
 
-Special items from newer R.E.P.O. versions can also be detected and scaled. v0.2.47 raises the minimum dependency to ScalerCore 1.0.4 while keeping its stable, strongly typed 1.x API — ScalerCore 1.0.4 fixes the missing player movement-speed adjustment on the latest game version, improving the player cart cycle. Token/cosmetic-box support, missed cart-enter retry during vanilla cart list refreshes, and third-party map valuable classification are all retained
+Special items from newer R.E.P.O. versions can also be detected and scaled. v0.2.47 raises the minimum dependency to [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 while keeping its stable, strongly typed 1.x API — [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 fixes the missing player movement-speed adjustment on the latest game version, improving the player cart cycle. Token/cosmetic-box support, missed cart-enter retry during vanilla cart list refreshes, and third-party map valuable classification are all retained
 
 ![R.E.P.O. 4.0 special item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -423,10 +423,10 @@ Config Language = 中文
 
 ### Known Limits
 
-- ScalerCore controls scaling animations and optional mass scaling. ShrinkCart does not manually write `Rigidbody.mass`; it only passes the `PreserveMass` option
+- [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) controls scaling animations and optional mass scaling. ShrinkCart does not manually write `Rigidbody.mass`; it only passes the `PreserveMass` option
 - Player growth is only part of the player cart cycle. It does not make regular objects, valuables, enemy orbs, or vehicles grow
 - Dead-head shrinking is disabled by default. When enabled, ShrinkCart only restores heads it scaled itself, and its narrow `PlayerDeathHead.Revive` prefix restore does not take over revive flow
-- "Mass scaling with size" only has visible handling changes when ScalerCore supports mass scaling for that object. Some ItemHandler objects may shrink visually while feeling similar in hand
+- "Mass scaling with size" only has visible handling changes when [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) supports mass scaling for that object. Some ItemHandler objects may shrink visually while feeling similar in hand
 - ShrinkCart does not control cart-to-cart physics collision, does not run penetration correction, and does not clamp vehicle velocity. Real cart collision behavior stays vanilla
 - If another scaling mod already controls an object, ShrinkCart tries to avoid overriding it
 - Third-party map valuables are recognized as vanilla `ValuableObject`s; non-valuable mechanisms and map structures are not force-scaled
@@ -440,6 +440,6 @@ Config Language = 中文
 Over 100,000 downloads — thank you for the trust and community support (◍•ᴗ•◍)❤
 Found an issue? Open one on [GitHub](https://github.com/AngelcoMilk/ShrinkCart/issues) — this mod is actively maintained
 
-`BepInEx` · `Harmony` · `ScalerCore` · `REPOConfig` · `Thunderstore`
+`BepInEx` · `Harmony` · `[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)` · `REPOConfig` · `Thunderstore`
 
 </details>
