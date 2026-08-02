@@ -66,9 +66,9 @@
 
 ![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-#### R.E.P.O. v0.4.x 特殊物品支持
+#### 新版本代币/外观箱适配
 
-新版本的特殊物品同样可以被识别并缩小。v0.2.47 将最低依赖更新到 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 并继续使用其稳定强类型 API，[ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 修复了最新游戏版本中玩家缩放移动速度调整调用缺失的问题，改善了玩家站车循环兼容性。代币/外观箱适配、购物车列表刷新漏事件补处理与第三方地图贵重物分类支持均已保留
+已适配 R.E.P.O. v0.4.x 新增的代币箱与外观箱
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -274,9 +274,9 @@ Large, wide, tall, and very tall valuables shrink with their own category factor
 
 ![Large item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
-#### R.E.P.O. v0.4.x Special Item Support
+#### Token & Cosmetic Box Support
 
-Special items from newer R.E.P.O. versions can also be detected and scaled. v0.2.47 raises the minimum dependency to [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 while keeping its stable, strongly typed 1.x API — [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 1.0.4 fixes the missing player movement-speed adjustment on the latest game version, improving the player cart cycle. Token/cosmetic-box support, missed cart-enter retry during vanilla cart list refreshes, and third-party map valuable classification are all retained
+Supports token boxes and cosmetic boxes introduced in R.E.P.O. v0.4.x
 
 ![R.E.P.O. 4.0 special item scaling demo](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
