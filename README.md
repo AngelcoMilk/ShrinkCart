@@ -199,16 +199,6 @@ DebugLogging = false
 
 ---
 
-### 已知限制
-
-- 物品缩小时重量可能不变——看着小了，搬起来和原来差不多
-- 玩家变大只在站车缩放循环里生效，物品和敌人不受影响
-- 与其他缩放模组共存时，对方已控制的对象会自动避开
-- 部分第三方地图添加的贵重物可能不会被购物车识别
-- 不要重复安装——同一个 profile 里只放一个 ShrinkCart DLL
-
----
-
 ### 致谢
 
 累积下载突破十万，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
@@ -414,16 +404,6 @@ DebugLogging = false
 [Language]
 Config Language = 中文
 ```
-
----
-
-### Known Limits
-
-- Shrunken items may feel the same weight — they look smaller but handle the same
-- Player growth only happens in the cart cycle; items and enemies are unaffected
-- When used alongside other scaling mods, already-controlled objects are skipped automatically
-- Some valuables from third-party maps may not be recognized by the cart
-- Don't install duplicates — keep only one ShrinkCart DLL per profile
 
 ---
 
