@@ -18,12 +18,12 @@
 - 支持的物品放入 C.A.R.T / 购物车后自动缩小，拿出并离车后恢复
 - 底层缩放由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 负责，本模组负责购物车触发、分类倍率、边缘防抖、恢复冷却、商店用品过滤、车类载物过滤和主机决策
 
-**可配置物品与武器缩放**
+**可配置物品缩放**
 
-枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品：
-
-- 默认保持原尺寸，不影响战斗、治疗和工具使用
-- 可在配置中开启「启用商店用品缩小」并使用商店用品倍率
+- 枪、血包、近战、手雷、工具、无人机、宝珠、升级、追踪器、地雷等商店购买类实用品默认保持原尺寸，不影响战斗、治疗和工具使用；可在配置中开启「启用商店用品缩小」并使用商店用品倍率
+- 新版本代币/外观箱有独立开关和倍率，默认 `0.4`
+- 敌人球 Small/Medium/Big/Berserker 使用独立倍率；钱袋/Surplus 使用独立倍率
+- 普通非贵重物默认不缩小
 
 **玩家缩放**
 
@@ -39,16 +39,6 @@
 
 - 开启后，已触发的玩家死亡头颅进入购物车会缩小
 - 离车、进入提取点、进入卡车或复活前恢复
-
-**代币/外观箱**
-
-- 新版本代币类箱子独立开关和倍率，默认 `0.4`
-
-**特殊物品支持**
-
-- 敌人球 Small/Medium/Big/Berserker 使用独立倍率
-- 钱袋/Surplus 使用独立倍率
-- 普通非贵重物默认不缩小
 
 **第三方地图标准贵重物**
 
@@ -292,12 +282,12 @@ DebugLogging = false
 - Supported objects shrink when placed into a C.A.R.T. / shopping cart and restore after leaving
 - [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) handles the actual scaling; this mod manages cart triggers, category factors, edge debounce, restore cooldowns, shop-item filtering, cart-object filtering, and host-side decisions
 
-**Configurable Shop-Item Scaling**
+**Configurable Item Scaling**
 
-Guns, medkits, melee items, grenades, tools, drones, pearls, upgrades, trackers, mines, and similar shop purchases:
-
-- Keep their original size by default — combat, healing, and tool use stay unaffected
-- Enable "shop item shrinking" in config to apply the shop-item factor
+- Guns, medkits, melee items, grenades, tools, drones, pearls, upgrades, trackers, mines, and similar shop purchases keep their original size by default — combat, healing, and tool use stay unaffected. Enable "shop item shrinking" in config to apply the shop-item factor
+- Newer token / cosmetic boxes have their own toggle and factor, default `0.4`
+- Enemy orbs use independent factors for Small / Medium / Big / Berserker; money bags / Surplus use their own factor
+- Ordinary non-valuable objects do not shrink by default
 
 **Player Scaling**
 
@@ -313,16 +303,6 @@ Disabled by default:
 
 - When enabled, triggered player death heads shrink in carts
 - Restore on leaving the cart, entering extraction/truck flow, or before revive
-
-**Token / Cosmetic Boxes**
-
-- Newer token boxes have their own toggle and factor, default `0.4`
-
-**Special Object Support**
-
-- Enemy orbs use independent factors for Small / Medium / Big / Berserker
-- Money bags / Surplus use their own factor
-- Ordinary non-valuable objects do not shrink by default
 
 **Third-Party Map Valuables**
 
