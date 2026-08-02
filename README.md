@@ -201,15 +201,11 @@ DebugLogging = false
 
 ### 已知限制
 
-- 缩放动画和可选质量缩小由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 控制，ShrinkCart 不手动写入 `Rigidbody.mass`，只传递 `PreserveMass` 选项
-- 玩家增大只属于玩家站车循环，不会让普通物品、贵重物、敌人球或车辆变大
-- 死亡头颅缩小默认关闭；开启后 ShrinkCart 只恢复自己缩小过的头颅，并在 `PlayerDeathHead.Revive` 前做窄范围恢复，不接管复活流程
-- 「启用重量随缩放降低」只在 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 支持质量缩放时生效；部分 ItemHandler 对象可能视觉缩小明显但手感变化不明显
-- ShrinkCart 不接管车对车物理碰撞，不使用穿透修正或速度钳制，车辆真实碰撞表现以原版为准
-- 其他缩放类 mod 已控制同一对象时，ShrinkCart 会尽量避免覆盖
-- 第三方地图新增的标准贵重物默认按原版 `ValuableObject` 识别；非贵重机关和地图结构物不会被强制缩放
-- 死亡/复活流程冲突请使用独立的 `ExtractionReviveFix`（如 REPOFidelity 与提取点复活类 mod），不要在 ShrinkCart 内处理
-- 同一 r2modman profile 只保留一个 ShrinkCart DLL，重复手动安装会导致 BepInEx 输出跳过重复插件的日志
+- 物品缩小时重量可能不变——看着小了，搬起来和原来差不多
+- 玩家变大只在站车缩放循环里生效，物品和敌人不受影响
+- 与其他缩放模组共存时，对方已控制的对象会自动避开
+- 部分第三方地图添加的贵重物可能不会被购物车识别
+- 不要重复安装——同一个 profile 里只放一个 ShrinkCart DLL
 
 ---
 
@@ -423,15 +419,11 @@ Config Language = 中文
 
 ### Known Limits
 
-- [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) controls scaling animations and optional mass scaling. ShrinkCart does not manually write `Rigidbody.mass`; it only passes the `PreserveMass` option
-- Player growth is only part of the player cart cycle. It does not make regular objects, valuables, enemy orbs, or vehicles grow
-- Dead-head shrinking is disabled by default. When enabled, ShrinkCart only restores heads it scaled itself, and its narrow `PlayerDeathHead.Revive` prefix restore does not take over revive flow
-- "Mass scaling with size" only has visible handling changes when [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) supports mass scaling for that object. Some ItemHandler objects may shrink visually while feeling similar in hand
-- ShrinkCart does not control cart-to-cart physics collision, does not run penetration correction, and does not clamp vehicle velocity. Real cart collision behavior stays vanilla
-- If another scaling mod already controls an object, ShrinkCart tries to avoid overriding it
-- Third-party map valuables are recognized as vanilla `ValuableObject`s; non-valuable mechanisms and map structures are not force-scaled
-- For death/revive flow conflicts (e.g. REPOFidelity and extraction-point revive mods), use the separate `ExtractionReviveFix`; do not handle them inside ShrinkCart
-- Keep only one ShrinkCart DLL in the same r2modman profile. Duplicate manual installs can cause BepInEx to log skipped duplicate plugins
+- Shrunken items may feel the same weight — they look smaller but handle the same
+- Player growth only happens in the cart cycle; items and enemies are unaffected
+- When used alongside other scaling mods, already-controlled objects are skipped automatically
+- Some valuables from third-party maps may not be recognized by the cart
+- Don't install duplicates — keep only one ShrinkCart DLL per profile
 
 ---
 
