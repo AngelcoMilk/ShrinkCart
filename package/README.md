@@ -101,7 +101,7 @@
 配置界面由 REPOConfig 提供，可在「语言 / Language」分组切换为英文：
 
 | 分组 | 主要设置项 |
-|---|---|
+|:---|:---|
 | 购物车 | 启用购物车缩小、放入时缩小速度、取出后放大速度、离车防抖延迟、恢复后重新缩小冷却、启用重量随缩放降低、启用商店用品缩小、防止碰撞弹回原尺寸 |
 | 玩家缩放 | 启用玩家缩放、玩家进车缩放倍率、玩家进车增大倍率、玩家站车触发时间、玩家离车判定宽容时间、玩家检测间隔、启用玩家受伤后自动恢复 |
 | 死亡头颅 | 启用死亡头颅进车缩小、死亡头颅缩小倍率 |
@@ -119,31 +119,52 @@
 ### 配置默认值
 
 | 配置项 | 默认值 |
-|---|---|
-| 缩小速度 | `0.5` |
-| 放大速度 | `0.2` |
-| 离车防抖延迟 | `0.5` 秒 |
-| 恢复后重新缩小冷却 | `0.5` 秒 |
-| 启用重量随缩放降低 | `true` |
-| 启用商店用品缩小 | `false` |
-| 防止碰撞弹回原尺寸 | `true` |
-| 启用玩家缩放 | `true` |
-| 玩家进车缩放倍率 | `0.55` |
-| 玩家进车增大倍率 | `1.5` |
-| 玩家站车触发时间 | `2` 秒 |
-| 玩家离车判定宽容时间 | `0.6` 秒 |
-| 启用玩家受伤后自动恢复 | `true` |
-| 启用死亡头颅进车缩小 | `false` |
-| 死亡头颅缩小倍率 | `0.5` |
-| 贵重物倍率 | Tiny `0.8` · Small `0.6` · Medium `0.45` · Big `0.4` · Wide `0.35` · Tall `0.35` · VeryTall `0.25` |
-| 敌人球倍率 | Small `0.8` · Medium `0.65` · Big `0.45` · Berserker `0.45` |
-| 商店用品倍率 | `0.5` |
-| 钱袋/Surplus 倍率 | `0.25` |
-| 代币/外观箱倍率 | `0.4` |
-| 动态物品扫描 | 开启（最小 `0.15` 秒 · 最大 `1.0` 秒） |
-| 敌人进车秒杀 | `true` |
-| 调试日志 | `false` |
-| 配置语言 | `中文` |
+|:---|---:|
+| **购物车** | |
+| 　缩小速度 | `0.5` |
+| 　放大速度 | `0.2` |
+| 　离车防抖延迟 | `0.5` 秒 |
+| 　恢复后重新缩小冷却 | `0.5` 秒 |
+| 　启用重量随缩放降低 | `true` |
+| 　启用商店用品缩小 | `false` |
+| 　防止碰撞弹回原尺寸 | `true` |
+| **玩家缩放** | |
+| 　启用玩家缩放 | `true` |
+| 　玩家进车缩放倍率 | `0.55` |
+| 　玩家进车增大倍率 | `1.5` |
+| 　玩家站车触发时间 | `2` 秒 |
+| 　玩家离车判定宽容时间 | `0.6` 秒 |
+| 　启用玩家受伤后自动恢复 | `true` |
+| **死亡头颅** | |
+| 　启用死亡头颅进车缩小 | `false` |
+| 　死亡头颅缩小倍率 | `0.5` |
+| **贵重物倍率** | |
+| 　Tiny | `0.8` |
+| 　Small | `0.6` |
+| 　Medium | `0.45` |
+| 　Big | `0.4` |
+| 　Wide | `0.35` |
+| 　Tall | `0.35` |
+| 　VeryTall | `0.25` |
+| **敌人球倍率** | |
+| 　Small | `0.8` |
+| 　Medium | `0.65` |
+| 　Big | `0.45` |
+| 　Berserker | `0.45` |
+| **特殊物品** | |
+| 　商店用品倍率 | `0.5` |
+| 　钱袋/Surplus 倍率 | `0.25` |
+| 　代币/外观箱倍率 | `0.4` |
+| **动态物品扫描** | |
+| 　启用扫描 | `true` |
+| 　最小间隔 | `0.15` 秒 |
+| 　最大间隔 | `1.0` 秒 |
+| **车辆碾压** | |
+| 　敌人进车秒杀 | `true` |
+| **诊断** | |
+| 　调试日志 | `false` |
+| **语言** | |
+| 　配置语言 | `中文` |
 
 > 车类载物过滤属于内部保护，不提供配置项
 
@@ -354,7 +375,7 @@ Special items from newer R.E.P.O. versions can also be detected and scaled. v0.2
 Configuration is provided through REPOConfig. Switch to English in the "Language" group if preferred:
 
 | Group | Main settings |
-|---|---|
+|:---|:---|
 | Cart | enable cart shrinking, shrink speed, restore speed, leave-cart debounce, reshrink cooldown, mass scaling with size, shop-item scaling, suppress collision restore |
 | Player Scaling | enable player scaling, player cart scale factor, player cart grow factor, stand trigger time, exit grace time, detection interval, restore player on damage |
 | Death Heads | enable dead-head cart shrinking, dead-head scale factor |
@@ -372,31 +393,52 @@ Configuration is provided through REPOConfig. Switch to English in the "Language
 ### Default Values
 
 | Setting | Default |
-|---|---|
-| Shrink speed | `0.5` |
-| Restore speed | `0.2` |
-| Leave-cart debounce | `0.5` seconds |
-| Reshrink cooldown | `0.5` seconds |
-| Mass scaling with size | `true` |
-| Shop-item scaling | `false` |
-| Suppress collision restore | `true` |
-| Player scaling | `true` |
-| Player shrink factor | `0.55` |
-| Player grow factor | `1.5` |
-| Player stand trigger time | `2` seconds |
-| Player exit grace time | `0.6` seconds |
-| Restore player on damage | `true` |
-| Dead-head cart shrinking | `false` |
-| Dead-head factor | `0.5` |
-| Valuable factors | Tiny `0.8` · Small `0.6` · Medium `0.45` · Big `0.4` · Wide `0.35` · Tall `0.35` · VeryTall `0.25` |
-| Enemy-orb factors | Small `0.8` · Medium `0.65` · Big `0.45` · Berserker `0.45` |
-| Shop-item factor | `0.5` |
-| Money bag / Surplus factor | `0.25` |
-| Token/cosmetic box factor | `0.4` |
-| Dynamic item scanning | On (min `0.15` s · max `1.0` s) |
-| Instant-kill enemies in cart | `true` |
-| Debug logging | `false` |
-| Config language | `中文` |
+|:---|---:|
+| **Cart** | |
+| 　Shrink speed | `0.5` |
+| 　Restore speed | `0.2` |
+| 　Leave-cart debounce | `0.5` s |
+| 　Reshrink cooldown | `0.5` s |
+| 　Mass scaling with size | `true` |
+| 　Shop-item scaling | `false` |
+| 　Suppress collision restore | `true` |
+| **Player Scaling** | |
+| 　Player scaling | `true` |
+| 　Player shrink factor | `0.55` |
+| 　Player grow factor | `1.5` |
+| 　Stand trigger time | `2` s |
+| 　Exit grace time | `0.6` s |
+| 　Restore player on damage | `true` |
+| **Death Heads** | |
+| 　Dead-head cart shrinking | `false` |
+| 　Dead-head factor | `0.5` |
+| **Valuable Factors** | |
+| 　Tiny | `0.8` |
+| 　Small | `0.6` |
+| 　Medium | `0.45` |
+| 　Big | `0.4` |
+| 　Wide | `0.35` |
+| 　Tall | `0.35` |
+| 　VeryTall | `0.25` |
+| **Enemy-Orb Factors** | |
+| 　Small | `0.8` |
+| 　Medium | `0.65` |
+| 　Big | `0.45` |
+| 　Berserker | `0.45` |
+| **Special Objects** | |
+| 　Shop-item factor | `0.5` |
+| 　Money bag / Surplus factor | `0.25` |
+| 　Token/cosmetic box factor | `0.4` |
+| **Dynamic Item Scanning** | |
+| 　Enabled | `true` |
+| 　Min interval | `0.15` s |
+| 　Max interval | `1.0` s |
+| **Cart Crush** | |
+| 　Instant-kill enemies | `true` |
+| **Diagnostics** | |
+| 　Debug logging | `false` |
+| **Language** | |
+| 　Config language | `中文` |
 
 > Cart-object filtering is an internal protection and is not exposed as a config option
 
