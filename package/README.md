@@ -72,7 +72,7 @@
 
 #### 商店用品默认不缩小
 
-枪械、血包等商店购买类实用品默认不会被购物车缩小，避免影响战斗、治疗和工具使用。需要时可在配置里开启「启用商店用品缩小」
+枪械、血包等商店购买类实用品默认不会被购物车缩小，避免影响战斗、治疗和工具使用。需要时可在配置里开启「启用商店用品缩小」选项
 
 ![枪械和血包默认不缩小](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-shop-items-not-scaled.gif)
 
