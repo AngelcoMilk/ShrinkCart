@@ -7,45 +7,49 @@
 
 <br>
 
-> 战利品太多，购物车装不下？放进去的东西会自动缩小，推着就走，拿出来就恢复原样
+> 战利品太多，购物车装不下？交给我——放进车里的东西我来缩小，推着就走，拿出来就恢复原样
 
-ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身由 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 完成，ShrinkCart 负责在物品放进 C.A.R.T / 购物车时触发缩小、在物品离开购物车后恢复原尺寸，并处理分类倍率、边缘防抖、恢复冷却、商店用品过滤等细节
+嗨，我是 ShrinkCart，R.E.P.O. v0.4.4.x 的购物车缩小搬运工
+缩放本身是 [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 的绝活，我只负责喊开始和喊停——物品进车触发缩小，离开购物车恢复原尺寸
+分类倍率、边缘防抖、恢复冷却、商店用品过滤这些小事，也都由我打理
 
 ### 功能
 
-- **购物车缩小搬运**：支持的物品放进购物车会自动缩小，拿出并离开后恢复原尺寸。再大的战利品也能轻松推走
-- **商店用品默认不缩**：枪、血包、手雷、无人机等商店实用品默认保持原尺寸，不影响战斗和使用；需要时可在配置中开启「启用商店用品缩小」
-- **玩家站车循环**：默认开启。玩家在购物车中心区域站一会儿，会按「原样 → 缩小 → 原样 → 增大 → 原样」循环；关闭后 ShrinkCart 不再处理玩家缩放
-- **死亡头颅缩小**：默认关闭。开启后，已触发的玩家死亡头颅进车会缩小，离车、进入提取点/卡车或复活前恢复
-- **代币/外观箱支持**：新版本代币箱有独立开关与倍率，默认 `0.4`
-- **敌人球与钱袋**：敌人球按 Small/Medium/Big/Berserker 分别设置倍率，钱袋/Surplus 使用单独倍率，普通杂物默认不缩
-- **第三方地图贵重物**：REPOLib 地图的标准 `ValuableObject` 按体积自动分类；门、按钮、机关等结构物不会被缩放
-- **敌人进车秒杀**：默认开启，进入购物车的敌人会立刻死亡（复刻 ShrinkerCartPlus 行为）
-- **主机决策 + ScalerCore 同步**：多人游戏中只有主机做缩小/恢复决策，最终大小由 ScalerCore 同步给所有玩家
+- **购物车缩小搬运**：能缩的物品放进车就缩，离开车就恢复，再大的战利品也能推着走
+- **商店用品默认不缩**：枪、血包、手雷、无人机这些实用品，我默认不碰，免得影响你打架和治疗；想缩就在配置里开「启用商店用品缩小」
+- **玩家站车循环**：默认开启，你在购物车中心站一会儿，就会按「原样 → 缩小 → 原样 → 增大 → 原样」走一圈；不想要就关掉我，我保证不再管玩家缩放
+- **死亡头颅缩小**：默认关闭，开启后阵亡队友的头颅进车我来缩，离车、进提取点/卡车或复活前恢复
+- **代币/外观箱支持**：新版本代币箱有独立开关和倍率，默认 `0.4`
+- **敌人球与钱袋**：敌人球按 Small/Medium/Big/Berserker 各配倍率，钱袋/Surplus 单独配，普通杂物默认不缩
+- **第三方地图贵重物**：REPOLib 地图的标准 `ValuableObject` 按体积自动分类，门、按钮、机关这些结构物我绝不乱动
+- **敌人进车秒杀**：默认开启，敢爬进车的敌人，我直接送走（复刻 ShrinkerCartPlus 行为）
+- **主机决策 + ScalerCore 同步**：多人里只有主机说了算，ScalerCore 把最终大小同步给所有人
 
 ### 动图演示
 
 #### 商店用品默认不缩小
 
-枪械、血包等实用品默认不会被购物车缩小，避免影响战斗、治疗和工具使用；需要时可在配置里开启「启用商店用品缩小」
+枪械、血包等实用品默认不缩，战斗、治疗、工具使用都不受影响；想缩就去配置里开「启用商店用品缩小」
 
 ![枪械和血包默认不缩小](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-shop-items-not-scaled.gif)
 
 #### 敌人球和钱袋会缩小
 
-敌人球使用敌人球配置组，钱袋/SurplusValuable 使用特殊物品配置组，各自按独立倍率缩小
+敌人球走敌人球配置组，钱袋/SurplusValuable 走特殊物品配置组，各有各的倍率
 
 ![敌人球和 Surplus 缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-enemy-orb-surplus-scaled.gif)
 
 #### 大型贵重物会缩小
 
-大型、宽型、高型、超高型贵重物按各自分类倍率缩小，原本难以放进车里的物品也能顺利搬运
+大、宽、高、超高的贵重物按各自倍率缩，原本塞不进车的也能顺利推走
 
 ![大型物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-large-item-scaled.gif)
 
 #### R.E.P.O. v0.4.x 特殊物品支持
 
-新版本的特殊物品同样可以被识别并缩小。v0.2.47 将最低依赖更新到 ScalerCore 1.0.4，继续使用稳定的 1.x 强类型 API——1.0.4 修复了最新游戏版本中玩家缩放时移动速度调整调用缺失的问题，玩家站车循环更稳定；代币/外观箱适配、购物车列表刷新漏事件补处理、第三方地图贵重物分类支持也都保留
+新版本的特殊物品我也认得出、缩得起
+v0.2.47 把最低依赖升到 ScalerCore 1.0.4，继续用稳定的 1.x 强类型 API——1.0.4 修好了最新游戏版本里玩家缩放移动速度调整缺失的问题，站车循环更稳
+代币/外观箱适配、购物车列表刷新漏事件补处理、第三方地图贵重物分类也都保留
 
 ![R.E.P.O. 4.0 特殊物品缩小演示](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-repo40-special-item-scaled.gif)
 
@@ -69,7 +73,7 @@ ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身�
 
 ### 配置默认值
 
-> 以下是各项默认值，多数情况下无需调整；修改后重启游戏生效
+> 这些是出厂默认值，一般不用动；改了记得重启游戏
 
 | 配置项 | 默认值 |
 |---|---|
@@ -126,8 +130,8 @@ ShrinkCart 是 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组。缩放本身�
 
 > **房主（Host）必须安装**；队友推荐安装，全员安装时体验最一致
 
-- 缩小和恢复由房主统一确认，并通过 ScalerCore 同步给所有玩家
-- 未安装的玩家仍可能看到 ScalerCore 默认的闪光/音效
+- 缩小和恢复由房主统一确认，ScalerCore 同步给所有玩家
+- 没装的玩家仍可能看到 ScalerCore 默认的闪光/音效
 
 ### 配置文件
 
@@ -204,15 +208,15 @@ DebugLogging = false
 
 ### 已知限制
 
-- 缩放动画与可选质量缩放由 ScalerCore 控制；ShrinkCart 不直接写入 `Rigidbody.mass`，只传递 `PreserveMass` 选项
-- 玩家增大仅属于站车循环，不会作用于物品、贵重物、敌人球或车辆
-- 死亡头颅缩小默认关闭；开启后仅恢复 ShrinkCart 自己缩小过的头颅，并在 `PlayerDeathHead.Revive` 前做窄范围恢复，不接管复活流程
-- 「启用重量随缩放降低」仅在 ScalerCore 支持该对象质量缩放时生效；部分 ItemHandler 可能视觉变小但手感不变
-- ShrinkCart 不接管车对车物理碰撞，不使用穿透修正或速度钳制，车辆碰撞表现与原版一致
-- 若其他缩放模组已控制同一对象，ShrinkCart 会尽量避免覆盖
-- 第三方地图贵重物按原版 `ValuableObject` 识别；非贵重机关和地图结构物不会被强制缩放
-- 死亡/复活流程的冲突（如 REPOFidelity 或提取点复活模组）请使用独立的 `ExtractionReviveFix`
-- 同一 r2modman profile 中只保留一个 ShrinkCart DLL，重复安装会导致 BepInEx 跳过重复插件
+- 缩放动画和可选质量缩放归 ScalerCore 管，我不直接写 `Rigidbody.mass`，只传 `PreserveMass` 选项
+- 玩家增大只属于站车循环，我不会让物品、贵重物、敌人球或车辆变大
+- 死亡头颅缩小默认关闭；开了我也只恢复自己缩过的头颅，在 `PlayerDeathHead.Revive` 前做窄范围恢复，不碰复活流程
+- 「启用重量随缩放降低」得 ScalerCore 支持才生效；有些 ItemHandler 看着缩了，手感没变
+- 我不接管车对车物理碰撞，不用穿透修正也不钳速度，车辆碰撞表现以原版为准
+- 别的缩放 mod 已经在管的对象，我会尽量让路
+- 第三方地图贵重物按原版 `ValuableObject` 认；非贵重机关和地图结构物不会被硬缩
+- 死亡/复活流程的冲突（如 REPOFidelity 或提取点复活模组）请用独立的 `ExtractionReviveFix`
+- 同一个 r2modman profile 只放一个 ShrinkCart DLL，重复安装会让 BepInEx 跳过重复插件
 
 </details>
 
@@ -223,15 +227,15 @@ DebugLogging = false
 
 <br>
 
-> Too much loot, not enough cart? Items you put inside shrink automatically — haul them away, and they pop back to full size when they leave
+> Too much loot, not enough cart? Leave it to me — items you put in shrink down, haul them away, and they pop back when they leave
 
-ShrinkCart is a cart-scaling hauling mod for R.E.P.O. v0.4.4.x. [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) does the actual scaling; ShrinkCart triggers it when supported objects enter a C.A.R.T. / shopping cart, restores them once they truly leave, and handles category factors, edge debounce, restore cooldowns, and shop-item filtering
+Hi, I'm ShrinkCart, the cart-scaling hauling mod for R.E.P.O. v0.4.4.x. [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) does the actual scaling; I just call the shots — shrinking supported objects when they enter a C.A.R.T. / shopping cart and restoring them once they truly leave. Category factors, edge debounce, restore cooldowns, and shop-item filtering? Also me.
 
 ### Features
 
 - **Cart shrink hauling**: supported objects shrink when placed into the cart and restore after leaving. Even the biggest valuables become easy to haul
 - **Shop items stay full-size by default**: guns, medkits, grenades, drones, and other shop utility items keep their original size so combat and tool use stay unaffected. Enable "shop item shrinking" in config if you want them shrunk
-- **Player cart cycle**: on by default. Stand in the cart center area for a while and you cycle normal → shrink → normal → grow → normal. Turn it off and ShrinkCart leaves player scaling alone entirely
+- **Player cart cycle**: on by default. Stand in the cart center area for a while and you cycle normal → shrink → normal → grow → normal. Turn it off and I'll leave player scaling alone entirely
 - **Dead-head scaling**: off by default. When enabled, triggered player death heads shrink in carts and restore on leaving, entering extraction/truck flow, or before revive
 - **Token/cosmetic boxes**: newer token boxes have their own toggle and factor, default `0.4`
 - **Enemy orbs and money bags**: enemy orbs have per-size factors (Small/Medium/Big/Berserker), money bags / Surplus have their own factor, and ordinary items do not shrink by default
@@ -420,12 +424,12 @@ DebugLogging = false
 
 ### Known Limits
 
-- ScalerCore controls scaling animations and optional mass scaling. ShrinkCart does not manually write `Rigidbody.mass`; it only passes the `PreserveMass` option
+- ScalerCore controls scaling animations and optional mass scaling. I never write `Rigidbody.mass` directly; I only pass the `PreserveMass` option
 - Player growth is only part of the cart cycle and never applies to items, valuables, enemy orbs, or vehicles
-- Dead-head shrinking is off by default. When enabled, ShrinkCart only restores heads it scaled itself, with a narrow `PlayerDeathHead.Revive` prefix restore that never takes over revive flow
+- Dead-head shrinking is off by default. When enabled, I only restore heads I scaled myself, with a narrow `PlayerDeathHead.Revive` prefix restore that never takes over revive flow
 - "Mass scaling with size" only applies where ScalerCore supports mass scaling for that object. Some ItemHandler objects may look smaller but feel the same in hand
-- ShrinkCart does not control cart-to-cart physics, does not run penetration correction, and does not clamp vehicle velocity. Cart collision behavior stays vanilla
-- If another scaling mod already controls an object, ShrinkCart tries to avoid overriding it
+- I don't control cart-to-cart physics, don't run penetration correction, and don't clamp vehicle velocity. Cart collision behavior stays vanilla
+- If another scaling mod already controls an object, I try to get out of its way
 - Third-party map valuables are recognized through vanilla `ValuableObject` classification; non-valuable mechanisms and map structures are never force-scaled
 - For death/revive flow conflicts (e.g. REPOFidelity or extraction-point revive mods), use the separate `ExtractionReviveFix`
 - Keep only one ShrinkCart DLL in the same r2modman profile. Duplicate installs make BepInEx skip the duplicate plugin
