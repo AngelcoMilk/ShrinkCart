@@ -33,18 +33,6 @@
 
 - 关闭「启用玩家缩放」后，不再运行玩家扫描或玩家缩放逻辑
 
-**死亡头颅缩小**
-
-默认关闭：
-
-- 开启后，已触发的玩家死亡头颅进入购物车会缩小
-- 离车、进入提取点、进入卡车或复活前恢复
-
-**第三方地图标准贵重物**
-
-- REPOLib 地图新增的标准 `ValuableObject` 会按体积分类默认识别
-- 普通门、按钮、机关和非贵重地图结构物默认不缩放
-
 **敌人进车秒杀**
 
 默认开启：
@@ -296,18 +284,6 @@ Enabled by default, in its own "Player Scaling" config section:
 > Standing in the cart center area for the configured duration cycles normal → shrink → normal → grow → normal
 
 - When disabled, ShrinkCart does not run player scanning or player-scaling logic
-
-**Dead-Head Scaling**
-
-Disabled by default:
-
-- When enabled, triggered player death heads shrink in carts
-- Restore on leaving the cart, entering extraction/truck flow, or before revive
-
-**Third-Party Map Valuables**
-
-- Standard `ValuableObject` items from REPOLib maps are classified by volume
-- Doors, buttons, mechanisms, and non-valuable map structures do not shrink by default
 
 **Enemy Instant Kill in Cart**
 
