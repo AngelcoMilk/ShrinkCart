@@ -26,17 +26,12 @@
 
 **玩家缩放**
 
-默认开启，独立在「玩家缩放」配置分组中：
-
-> 玩家站在正式购物车中心区域一段时间，会按「原样 → 缩小 → 原样 → 增大 → 原样」循环
-
+- 默认开启。在购物车中心站一会儿，角色自动循环「原样 → 缩小 → 原样 → 增大 → 原样」
 - 不需要时随时在配置中关闭
 
 **敌人进车秒杀**
 
-默认开启：
-
-- 敌人进入购物车时立刻死亡
+- 默认开启，进车的敌人立刻死亡
 
 **主机决策 + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) 同步**
 
@@ -128,8 +123,6 @@
 
 配置文件路径：`BepInEx/config/AngelcoMilk.ShrinkCart.cfg`
 
----
-
 ### 联机说明
 
 > **Host 必须安装**，客户端推荐安装，全员安装时体验最一致
@@ -196,8 +189,6 @@ DebugLogging = false
 配置语言 / Config Language = 中文
 ```
 
----
-
 ### 致谢
 
 累积下载突破 `100K`，感谢每一位使用者与社区的持续付出 (◍•ᴗ•◍)❤
@@ -234,17 +225,12 @@ DebugLogging = false
 
 **Player Scaling**
 
-Enabled by default, in its own "Player Scaling" config section:
-
-> Standing in the cart center area for the configured duration cycles normal → shrink → normal → grow → normal
-
-- Turn it off in config whenever you want
+- On by default. Stand in the cart center to cycle normal → shrink → normal → grow → normal
+- Turn it off whenever you want
 
 **Enemy Instant Kill in Cart**
 
-Enabled by default:
-
-- Enemies die when entering a cart
+- On by default — enemies die when entering a cart
 
 **Host Decisions + [ScalerCore](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/) Sync**
 
@@ -336,8 +322,6 @@ Configuration is provided through REPOConfig. Switch to English in the "Language
 
 Config file: `BepInEx/config/AngelcoMilk.ShrinkCart.cfg`
 
----
-
 ### Multiplayer
 
 > **Host must install**; clients are recommended for the most consistent experience
@@ -403,8 +387,6 @@ DebugLogging = false
 [Language]
 Config Language = 中文
 ```
-
----
 
 ### Credits
 
