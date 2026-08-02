@@ -257,7 +257,7 @@ Enabled by default:
 
 #### Shop Items Do Not Shrink By Default
 
-Shop items such as guns and medkits are not shrunk by default, so combat, healing, and tool use stay unaffected. Enable "shop item shrinking" in config if needed
+Shop items such as guns and medkits are not shrunk by default, so combat, healing, and tool use stay unaffected
 
 ![Shop items not scaled by default](https://github.com/AngelcoMilk/ShrinkCart/releases/download/v0.2.5/shrinkcart-shop-items-not-scaled.gif)
 
