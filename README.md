@@ -1,4 +1,4 @@
-# ShrinkCart v0.2.47
+# ShrinkCart
 
 ---
 
