@@ -99,7 +99,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 | 配置项 | 默认值 |
 |:---|---:|
 | 购物车缩小 | 开启 |
-| 缩小 / 放大速度 | `0.5` / `0.2` |
+| 缩小 / 放大速度 | `5` / `2`（实际速度 = 值 × 0.1，即 `0.5` / `0.2`） |
 | 商店用品缩小 | 关闭 |
 | 玩家站车缩放 | 开启（缩小 `0.55` / 增大 `1.5`） |
 | 死亡头颅进车缩小 | 关闭 |
@@ -115,7 +115,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 
 ## 安装
 
-**推荐**：通过 Thunderstore Mod Manager / r2modman 安装（依赖 `BepInEx-BepInExPack-5.4.2305`、[Vippy-ScalerCore-1.0.4](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)、`nickklmao-REPOConfig-1.2.6`）
+**推荐**：通过 Thunderstore Mod Manager / r2modman 安装（依赖 `BepInEx-BepInExPack-5.4.2305`、[Vippy-ScalerCore-1.0.6](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)、`nickklmao-REPOConfig-1.2.6`）
 
 **手动安装**：
 
@@ -138,8 +138,8 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 ```ini
 [购物车]
 启用购物车缩小 = true
-放入时缩小速度 = 0.5
-取出后放大速度 = 0.2
+放入时缩小速度 = 5
+取出后放大速度 = 2
 离车防抖延迟 = 0.5
 恢复后重新缩小冷却 = 0.5
 启用重量随缩放降低 = true
@@ -328,7 +328,7 @@ Configuration is provided through REPOConfig. Switch to English in the "Language
 | Setting | Default |
 |:---|---:|
 | Cart shrinking | On |
-| Shrink / restore speed | `0.5` / `0.2` |
+| Shrink / restore speed | `5` / `2` (actual speed = value x 0.1, i.e. `0.5` / `0.2`) |
 | Shop-item shrinking | Off |
 | Player cart scaling | On (shrink `0.55` / grow `1.5`) |
 | Dead-head cart shrinking | Off |
@@ -344,7 +344,7 @@ Configuration is provided through REPOConfig. Switch to English in the "Language
 
 ## Installation
 
-**Recommended**: Install via Thunderstore Mod Manager / r2modman (requires `BepInEx-BepInExPack-5.4.2305`, [Vippy-ScalerCore-1.0.4](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/), `nickklmao-REPOConfig-1.2.6`)
+**Recommended**: Install via Thunderstore Mod Manager / r2modman (requires `BepInEx-BepInExPack-5.4.2305`, [Vippy-ScalerCore-1.0.6](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/), `nickklmao-REPOConfig-1.2.6`)
 
 **Manual**:
 
@@ -367,8 +367,8 @@ Config section and key names follow the selected language. The following is the 
 ```ini
 [Cart]
 Enable cart shrinking = true
-Shrink speed = 0.5
-Restore speed = 0.2
+Shrink speed = 5
+Restore speed = 2
 Leave-cart debounce = 0.5
 Reshrink cooldown = 0.5
 Scale mass with size = true

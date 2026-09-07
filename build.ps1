@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.50"
+$modVersion = "0.2.51"
 
 if ($Configuration -ine "Debug" -and $Configuration -ine "Release") {
     throw "Configuration must be Debug or Release."
@@ -337,6 +337,13 @@ Copy-Item -LiteralPath (Join-Path $root "package\manifest.json") -Destination (J
 Copy-Item -LiteralPath (Join-Path $root "package\README.md") -Destination (Join-Path $distRoot "README.md") -Force
 Copy-Item -LiteralPath (Join-Path $root "package\icon.png") -Destination (Join-Path $distRoot "icon.png") -Force
 
+$repoChangelog = Join-Path $root "CHANGELOG.md"
+if (Test-Path $repoChangelog) {
+    Copy-Item -LiteralPath $repoChangelog -Destination (Join-Path $distRoot "CHANGELOG.md") -Force
+} else {
+    Write-Warning "CHANGELOG.md not found at repo root; skipping changelog packaging."
+}
+
 $profilePluginDir = Join-Path $R2Profile "BepInEx\plugins\$modName"
 if ($InstallToProfile -and (Test-Path (Join-Path $R2Profile "BepInEx"))) {
     New-Item -ItemType Directory -Force -Path $profilePluginDir | Out-Null
@@ -364,6 +371,9 @@ if ($PackageToDesktop) {
     Copy-Item -LiteralPath (Join-Path $distRoot "manifest.json") -Destination (Join-Path $packageStage "manifest.json") -Force
     Copy-Item -LiteralPath (Join-Path $distRoot "README.md") -Destination (Join-Path $packageStage "README.md") -Force
     Copy-Item -LiteralPath (Join-Path $distRoot "icon.png") -Destination (Join-Path $packageStage "icon.png") -Force
+    if (Test-Path (Join-Path $distRoot "CHANGELOG.md")) {
+        Copy-Item -LiteralPath (Join-Path $distRoot "CHANGELOG.md") -Destination (Join-Path $packageStage "CHANGELOG.md") -Force
+    }
     Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $packageStage "$modName.dll") -Force
 
     Add-Type -AssemblyName System.IO.Compression
@@ -373,6 +383,9 @@ if ($PackageToDesktop) {
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "manifest.json"), "manifest.json") | Out-Null
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "README.md"), "README.md") | Out-Null
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "icon.png"), "icon.png") | Out-Null
+        if (Test-Path (Join-Path $packageStage "CHANGELOG.md")) {
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "CHANGELOG.md"), "CHANGELOG.md") | Out-Null
+        }
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $pluginOut, "$modName.dll") | Out-Null
     }
     finally {

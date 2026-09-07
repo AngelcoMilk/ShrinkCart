@@ -88,8 +88,11 @@ namespace ShrinkCart
         private const string LanguageSection = "语言 / Language";
         private const string LanguageKey = "配置语言 / Config Language";
         private const string MassDefaultMigrationMarkerName = "ShrinkCart.v0.2.39.mass-default-enabled";
+        private const string MigrationSection = "ShrinkCart.Migration";
+        private const string SpeedScaleMigratedKey = "SpeedScaleV2Migrated";
 
         private static bool _useEnglish;
+        private static bool _normalizingFloatEntry;
         private static ConfigFile _boundConfig;
         private static readonly List<LocalizedDefinition> ActiveDefinitions = new List<LocalizedDefinition>();
 
@@ -102,6 +105,8 @@ namespace ShrinkCart
             ActiveDefinitions.Clear();
 
             _useEnglish = IsEnglishLanguage(DetectConfiguredLanguage(config));
+
+            MigrateLegacySpeedScale(config);
 
             CartShrinkingEnabled = Bind(
                 config,
@@ -122,8 +127,8 @@ namespace ShrinkCart
                 "Cart",
                 "放入时缩小速度",
                 "Shrink speed",
-                0.5f,
-                Ranged(Text("ScalerCore 缩小动画速度。数值越大越快。", "ScalerCore shrink animation speed. Higher values are faster."), 0.1f, 20.0f));
+                5f,
+                Ranged(Text("ScalerCore 缩小动画速度 = 该值 × 0.1。数值越大越快，默认 5 即实际速度 0.5。每调 0.01 实际变化 0.001。", "ScalerCore shrink animation speed = value x 0.1. Higher is faster; default 5 equals actual speed 0.5. Each 0.01 step changes the actual speed by 0.001."), 0.1f, 20.0f));
 
             RestoreScaleSpeed = Bind(
                 config,
@@ -132,8 +137,8 @@ namespace ShrinkCart
                 "Cart",
                 "取出后放大速度",
                 "Restore speed",
-                0.2f,
-                Ranged(Text("正常取出购物车后的 ScalerCore 放大动画速度。数值越小越慢。", "ScalerCore restore animation speed after leaving the cart. Lower values are slower."), 0.1f, 20.0f));
+                2f,
+                Ranged(Text("取出购物车后的 ScalerCore 放大动画速度 = 该值 × 0.1。数值越小越慢，默认 2 即实际速度 0.2。", "ScalerCore restore animation speed after leaving the cart = value x 0.1. Lower is slower; default 2 equals actual speed 0.2."), 0.1f, 20.0f));
 
             CartLeaveDebounceSeconds = Bind(
                 config,
@@ -496,12 +501,14 @@ namespace ShrinkCart
 
         internal static float SafeScaleSpeed()
         {
-            return Mathf.Clamp(CartScaleSpeed.Value, 0.1f, 20.0f);
+            // 速度按 10 倍刻度存储：实际速度 = 配置值 × 0.1（默认 5 → 0.5，与旧版默认手感严格一致）。
+            return Mathf.Clamp(CartScaleSpeed.Value, 0.1f, 20.0f) * 0.1f;
         }
 
         internal static float SafeRestoreScaleSpeed()
         {
-            return Mathf.Clamp(RestoreScaleSpeed.Value, 0.1f, 20.0f);
+            // 速度按 10 倍刻度存储：实际速度 = 配置值 × 0.1（默认 2 → 0.2，与旧版默认手感严格一致）。
+            return Mathf.Clamp(RestoreScaleSpeed.Value, 0.1f, 20.0f) * 0.1f;
         }
 
         internal static float SafeCartLeaveDebounceSeconds()
@@ -696,10 +703,55 @@ namespace ShrinkCart
             ConfigDescription description)
         {
             T value = ReadLocalizedValue(config, id, chineseSection, englishSection, chineseKey, englishKey, defaultValue);
+            if (value is float)
+            {
+                // 读取时按两位小数规格化，清洗历史脏值（如 0.3999999），避免 REPOConfig 的精度探测被脏值撑爆。
+                value = (T)(object)NormalizeFloat((float)(object)value);
+            }
+
             string section = _useEnglish ? englishSection : chineseSection;
             string key = _useEnglish ? englishKey : chineseKey;
             ActiveDefinitions.Add(new LocalizedDefinition(id, chineseSection, englishSection, chineseKey, englishKey));
-            return config.Bind(section, key, value, description);
+            ConfigEntry<T> bound = config.Bind(section, key, value, description);
+            ConfigEntry<float> floatEntry = bound as ConfigEntry<float>;
+            if (floatEntry != null)
+            {
+                // 写入时同样规格化：MenuLib 滑条吸附的浮点误差原样落盘会让 REPOConfig 精度探测越来越脏，在此斩断。
+                floatEntry.SettingChanged += OnFloatEntrySettingChanged;
+            }
+
+            return bound;
+        }
+
+        private static float NormalizeFloat(float value)
+        {
+            return Mathf.Round(value * 100f) / 100f;
+        }
+
+        private static void OnFloatEntrySettingChanged(object sender, EventArgs args)
+        {
+            ConfigEntry<float> entry = sender as ConfigEntry<float>;
+            if (entry == null || _normalizingFloatEntry)
+            {
+                return;
+            }
+
+            float raw = entry.Value;
+            float rounded = NormalizeFloat(raw);
+            if (Mathf.Approximately(raw, rounded))
+            {
+                return;
+            }
+
+            _normalizingFloatEntry = true;
+            try
+            {
+                entry.Value = rounded;
+            }
+            finally
+            {
+                _normalizingFloatEntry = false;
+            }
         }
 
         private static T ReadLocalizedValue<T>(
@@ -922,6 +974,70 @@ namespace ShrinkCart
             }
 
             return Path.Combine(directory, MassDefaultMigrationMarkerName);
+        }
+
+        private static void MigrateLegacySpeedScale(ConfigFile config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            ConfigEntry<bool> sentinel = config.Bind(
+                MigrationSection,
+                SpeedScaleMigratedKey,
+                false,
+                new ConfigDescription(string.Empty, null, "HideFromREPOConfig"));
+
+            if (sentinel.Value)
+            {
+                return;
+            }
+
+            bool migratedAny = false;
+            migratedAny |= MigrateLegacySpeedEntry(config, "购物车", "放入时缩小速度");
+            migratedAny |= MigrateLegacySpeedEntry(config, "购物车", "取出后放大速度");
+            migratedAny |= MigrateLegacySpeedEntry(config, "Cart", "Shrink speed");
+            migratedAny |= MigrateLegacySpeedEntry(config, "Cart", "Restore speed");
+
+            try
+            {
+                if (migratedAny)
+                {
+                    config.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogWarning("Failed to save speed scale migration: " + ex.Message);
+            }
+
+            sentinel.Value = true;
+        }
+
+        private static bool MigrateLegacySpeedEntry(ConfigFile config, string section, string key)
+        {
+            ConfigEntry<float> entry;
+            if (!config.TryGetEntry(section, key, out entry))
+            {
+                return false;
+            }
+
+            float legacy = entry.Value;
+            if (legacy <= 0f)
+            {
+                return false;
+            }
+
+            // 旧刻度 → 新刻度：值 × 10 后按两位小数规格化并钳回范围；实际速度 = 新值 × 0.1，
+            // 因此旧值 0.5/0.2 迁移后的默认手感与旧版本严格一致。
+            float scaled = NormalizeFloat(legacy * 10f);
+            float migrated = Mathf.Clamp(scaled, 0.1f, 20.0f);
+            entry.Value = migrated;
+            // 旧实际速度超过新刻度上限（>2.0）时值会被钳到 20，日志标注让极端值玩家能发现原因。
+            bool clamped = migrated != scaled;
+            Plugin.Log.LogInfo("Migrated speed config '" + section + "/" + key + "' to x10 scale: " + legacy.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + " -> " + migrated.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + (clamped ? " (clamped to range)" : string.Empty));
+            return true;
         }
 
         private static bool LegacyBool(ConfigFile config, bool defaultValue, params string[] sectionKeyPairs)
