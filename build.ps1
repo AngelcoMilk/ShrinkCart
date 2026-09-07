@@ -11,7 +11,14 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.47"
+$modVersion = "0.2.50"
+
+if ($Configuration -ine "Debug" -and $Configuration -ine "Release") {
+    throw "Configuration must be Debug or Release."
+}
+if ($PackageToDesktop -and $Configuration -ine "Release") {
+    throw "PackageToDesktop requires -Configuration Release."
+}
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "src\ShrinkCart"
@@ -310,9 +317,20 @@ function Test-ScalerCoreHookTargets {
 Test-GameHookTargets -AssemblyPath (Join-Path $managed "Assembly-CSharp.dll") -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
 Test-ScalerCoreHookTargets -AssemblyPath $ScalerCoreDll -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
 
-& $csc /nologo /codepage:65001 /target:library /optimize+ /debug:full /nowarn:1701 /out:$pluginOut $refArgs $sources
+$compilerModeArgs = if ($Configuration -ieq "Release") {
+    @("/optimize+", "/debug-")
+} else {
+    @("/optimize-", "/debug:full")
+}
+
+& $csc /nologo /codepage:65001 /target:library $compilerModeArgs /nowarn:1701 /out:$pluginOut $refArgs $sources
 if ($LASTEXITCODE -ne 0) {
     throw "csc.exe failed with exit code $LASTEXITCODE"
+}
+
+$pdbOut = [System.IO.Path]::ChangeExtension($pluginOut, ".pdb")
+if ($Configuration -ieq "Release" -and (Test-Path $pdbOut)) {
+    throw "Release build unexpectedly generated $pdbOut"
 }
 
 Copy-Item -LiteralPath (Join-Path $root "package\manifest.json") -Destination (Join-Path $distRoot "manifest.json") -Force
