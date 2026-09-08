@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $modName = "ShrinkCart"
-$modVersion = "0.2.51"
+$modVersion = "0.2.52"
 
 if ($Configuration -ine "Debug" -and $Configuration -ine "Release") {
     throw "Configuration must be Debug or Release."
