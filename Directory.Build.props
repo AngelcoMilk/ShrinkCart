@@ -1,0 +1,24 @@
+<Project>
+  <!--
+    本机路径放在 git-ignore 的 ShrinkCart.local.props（从 ShrinkCart.local.props.example 复制）。
+    也可以在命令行覆盖：dotnet build -p:REPOGameDir=... -p:R2ProfileDir=...
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)ShrinkCart.local.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)ShrinkCart.local.props')" />
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <!-- Unity 对象有"假 null"语义，不启用可空引用类型分析。 -->
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+
+    <REPOGameDir Condition="'$(REPOGameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\REPO</REPOGameDir>
+    <R2ProfileDir Condition="'$(R2ProfileDir)' == ''">$(APPDATA)\r2modmanPlus-local\REPO\profiles\REPO</R2ProfileDir>
+    <REPOManagedDir>$([MSBuild]::EnsureTrailingSlash('$(REPOGameDir)'))REPO_Data\Managed\</REPOManagedDir>
+    <R2PluginsDir>$([MSBuild]::EnsureTrailingSlash('$(R2ProfileDir)'))BepInEx\plugins\</R2PluginsDir>
+    <!-- 依赖只从指定 profile 的 <Team>-<Package> 目录解析，不递归搜索、不回退共享 cache。 -->
+    <ScalerCoreDir Condition="'$(ScalerCoreDir)' == ''">$(R2PluginsDir)Vippy-ScalerCore\</ScalerCoreDir>
+    <REPOConfigDir Condition="'$(REPOConfigDir)' == ''">$(R2PluginsDir)nickklmao-REPOConfig\</REPOConfigDir>
+  </PropertyGroup>
+</Project>

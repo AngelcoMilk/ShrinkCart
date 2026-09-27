@@ -1,400 +1,165 @@
+<#
+.SYNOPSIS
+    ShrinkCart build orchestration: build -> unit tests -> (optional) regenerate docs -> package the Thunderstore ZIP -> build-time validation.
+
+.DESCRIPTION
+    Local paths (game directory, r2modman profile) live only in ShrinkCart.local.props
+    (copy ShrinkCart.local.props.example). The version lives only in <Version> of src/ShrinkCart/ShrinkCart.csproj.
+    See docs/MAINTENANCE.md.
+
+    Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts in the ANSI code page.
+
+.EXAMPLE
+    powershell.exe -ExecutionPolicy Bypass -File .\build.ps1
+    powershell.exe -ExecutionPolicy Bypass -File .\build.ps1 -UpdateDocs
+    powershell.exe -ExecutionPolicy Bypass -File .\build.ps1 -InstallToProfile
+    powershell.exe -ExecutionPolicy Bypass -File .\build.ps1 -PackageToDesktop
+#>
+[CmdletBinding()]
 param(
-    [string]$Configuration = "Debug",
-    [string]$GameDir = "D:\SteamLibrary\steamapps\common\REPO",
-    [string]$R2Profile = "$env:APPDATA\r2modmanPlus-local\REPO\profiles\REPO",
-    [string]$ScalerCoreDll = "",
-    [string]$REPOConfigDll = "",
+    [ValidateSet("Debug", "Release")]
+    [string]$Configuration = "Release",
+
+    # Regenerate the generated blocks of docs/INTERFACES.md (hooks, game members, config schema) before validating.
+    [switch]$UpdateDocs,
+
+    # Copy the package files into <R2ProfileDir>\BepInEx\plugins\AngelcoMilk-ShrinkCart\ for local testing.
     [switch]$InstallToProfile,
+
+    # Copy the ZIP to the desktop (Release only).
     [switch]$PackageToDesktop
 )
 
 $ErrorActionPreference = "Stop"
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = "1"
+$env:DOTNET_NOLOGO = "1"
 
+$root = $PSScriptRoot
 $modName = "ShrinkCart"
-$modVersion = "0.2.52"
+$packageFolder = "AngelcoMilk-ShrinkCart"
+$project = Join-Path $root "src\ShrinkCart\ShrinkCart.csproj"
+$testProject = Join-Path $root "tests\ShrinkCart.Tests\ShrinkCart.Tests.csproj"
+$toolProject = Join-Path $root "tools\ShrinkCart.BuildTools\ShrinkCart.BuildTools.csproj"
+$toolDll = Join-Path $root "tools\ShrinkCart.BuildTools\bin\Release\net10.0\ShrinkCart.BuildTools.dll"
 
-if ($Configuration -ine "Debug" -and $Configuration -ine "Release") {
-    throw "Configuration must be Debug or Release."
-}
-if ($PackageToDesktop -and $Configuration -ine "Release") {
-    throw "PackageToDesktop requires -Configuration Release."
-}
-
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$src = Join-Path $root "src\ShrinkCart"
-$distRoot = Join-Path $root "dist"
-$outDir = Join-Path $distRoot "BepInEx\plugins\$modName"
-$managed = Join-Path $GameDir "REPO_Data\Managed"
-$bepCore = Join-Path $R2Profile "BepInEx\core"
-$pluginOut = Join-Path $outDir "$modName.dll"
-$desktopZip = Join-Path ([Environment]::GetFolderPath("Desktop")) "$modName-$modVersion.zip"
-
-if (!(Test-Path (Join-Path $managed "Assembly-CSharp.dll"))) {
-    throw "Assembly-CSharp.dll not found under $managed"
-}
-if (!(Test-Path (Join-Path $bepCore "BepInEx.dll"))) {
-    throw "BepInEx core not found under $bepCore"
-}
-if (!(Test-Path $src)) {
-    throw "Source directory not found at $src"
+if ($PackageToDesktop -and $Configuration -ne "Release") {
+    throw "-PackageToDesktop requires -Configuration Release."
 }
 
-if ([string]::IsNullOrWhiteSpace($ScalerCoreDll)) {
-    $profileCandidate = Get-ChildItem -LiteralPath (Join-Path $R2Profile "BepInEx\plugins") -Recurse -Filter "ScalerCore.dll" -File -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-
-    if ($profileCandidate -ne $null) {
-        $ScalerCoreDll = $profileCandidate.FullName
-    } else {
-        $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "ScalerCore.dll" -File -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1
-
-        if ($candidate -ne $null) {
-            Write-Warning "ScalerCore was not deployed in the selected profile; falling back to shared cache candidate. Pass -ScalerCoreDll to make the version explicit."
-            $ScalerCoreDll = $candidate.FullName
-        }
-    }
-}
-
-if (!(Test-Path $ScalerCoreDll)) {
-    throw "ScalerCore.dll not found. Install Vippy-ScalerCore in the REPO r2modman profile, or pass -ScalerCoreDll <path>."
-}
-
-if ([string]::IsNullOrWhiteSpace($REPOConfigDll)) {
-    $profileCandidate = Get-ChildItem -LiteralPath (Join-Path $R2Profile "BepInEx\plugins") -Recurse -Filter "REPOConfig.dll" -File -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-
-    if ($profileCandidate -ne $null) {
-        $REPOConfigDll = $profileCandidate.FullName
-    } else {
-        $candidate = Get-ChildItem -LiteralPath "$env:APPDATA\r2modmanPlus-local\REPO\cache" -Recurse -Filter "REPOConfig.dll" -File -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1
-
-        if ($candidate -ne $null) {
-            Write-Warning "REPOConfig was not deployed in the selected profile; falling back to shared cache candidate. Pass -REPOConfigDll to make the version explicit."
-            $REPOConfigDll = $candidate.FullName
-        }
-    }
-}
-
-if (!(Test-Path $REPOConfigDll)) {
-    throw "REPOConfig.dll not found. Install nickklmao-REPOConfig in the REPO r2modman profile, or pass -REPOConfigDll <path>."
-}
-
-if (Test-Path $distRoot) {
-    $resolvedDist = (Resolve-Path -LiteralPath $distRoot).Path
-    $resolvedRoot = (Resolve-Path -LiteralPath $root).Path
-    if (!$resolvedDist.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Refusing to clean dist outside workspace: $resolvedDist"
-    }
-
-    Remove-Item -LiteralPath $distRoot -Recurse -Force
-}
-
-New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-
-$csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-if (!(Test-Path $csc)) {
-    $csc = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe"
-}
-if (!(Test-Path $csc)) {
-    throw "No .NET Framework csc.exe found."
-}
-
-$sources = Get-ChildItem -LiteralPath $src -Filter "*.cs" -Recurse | ForEach-Object { $_.FullName }
-
-$refs = @(
-    (Join-Path $bepCore "BepInEx.dll"),
-    (Join-Path $bepCore "0Harmony.dll"),
-    (Join-Path $managed "Assembly-CSharp.dll"),
-    (Join-Path $managed "UnityEngine.dll"),
-    (Join-Path $managed "UnityEngine.CoreModule.dll"),
-    (Join-Path $managed "UnityEngine.IMGUIModule.dll"),
-    (Join-Path $managed "UnityEngine.InputLegacyModule.dll"),
-    (Join-Path $managed "UnityEngine.PhysicsModule.dll"),
-    (Join-Path $managed "PhotonUnityNetworking.dll"),
-    (Join-Path $managed "PhotonRealtime.dll"),
-    (Join-Path $managed "Photon3Unity3D.dll"),
-    (Join-Path $managed "netstandard.dll"),
-    $ScalerCoreDll,
-    $REPOConfigDll
-)
-
-$refArgs = $refs | ForEach-Object { "/reference:$_" }
-
-function Test-GameHookTargets {
-    param(
-        [string]$AssemblyPath,
-        [string]$CecilPath
-    )
-
-    if (!(Test-Path $CecilPath)) {
-        Write-Warning "Mono.Cecil.dll not found; skipping Harmony hook target validation."
-        return
-    }
-
-    Add-Type -Path $CecilPath
-    $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
-    $targets = @(
-        @{ Type = "PhysGrabInCart"; Method = "Add"; Parameters = @("PhysGrabObject") },
-        @{ Type = "PhysGrabCart"; Method = "Start"; Parameters = @() },
-        @{ Type = "PhysGrabCart"; Method = "ObjectsInCart"; Parameters = @() },
-        @{ Type = "CosmeticWorldObject"; Method = "Start"; Parameters = @() },
-        @{ Type = "PhysGrabObject"; Method = "Start"; Parameters = @() },
-        @{ Type = "ItemValuableBox"; Method = "Start"; Parameters = @() },
-        @{ Type = "ItemEquippable"; Method = "IsEquipped"; Parameters = @() },
-        @{ Type = "EnemyHealth"; Method = "Hurt"; Parameters = @("System.Int32", "UnityEngine.Vector3") },
-        @{ Type = "PhysGrabObject"; Method = "DestroyPhysGrabObject"; Parameters = @() },
-        @{ Type = "PlayerDeathHead"; Method = "Revive"; Parameters = @() },
-        @{ Type = "RunManager"; Method = "ChangeLevel"; Parameters = @("System.Boolean", "System.Boolean", "RunManager/ChangeLevelType") }
-    )
-    $requiredFields = @(
-        @{ Type = "PhysGrabInCart"; Field = "cart" },
-        @{ Type = "CosmeticWorldObject"; Field = "physGrabObject" },
-        @{ Type = "EnemyRigidbody"; Field = "enemy" },
-        @{ Type = "Enemy"; Field = "Health" },
-        @{ Type = "EnemyHealth"; Field = "healthCurrent" },
-        @{ Type = "ItemAttributes"; Field = "itemType" },
-        @{ Type = "ItemValuableBox"; Field = "boxChecker" },
-        @{ Type = "PhysGrabObject"; Field = "isGun" },
-        @{ Type = "PhysGrabCart"; Field = "isSmallCart" },
-        @{ Type = "PhysGrabCart"; Field = "physGrabObject" },
-        @{ Type = "PhysGrabCart"; Field = "inCart" },
-        @{ Type = "PhysGrabCart"; Field = "itemsInCart" },
-        @{ Type = "PhysGrabCart"; Field = "itemsInCartCount" },
-        @{ Type = "PhysGrabCart"; Field = "haulCurrent" },
-        @{ Type = "PhysGrabCart"; Field = "valueScreen" },
-        @{ Type = "PlayerAvatar"; Field = "physObjectStander" },
-        @{ Type = "PlayerAvatar"; Field = "collider" },
-        @{ Type = "PlayerDeathHead"; Field = "physGrabObject" },
-        @{ Type = "PlayerDeathHead"; Field = "triggered" },
-        @{ Type = "PlayerDeathHead"; Field = "inExtractionPoint" },
-        @{ Type = "PlayerDeathHead"; Field = "inTruck" },
-        @{ Type = "PhysGrabObject"; Field = "impactDetector" }
-    )
-
-    $errors = New-Object System.Collections.Generic.List[string]
-    foreach ($target in $targets) {
-        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $target.Type -or $_.FullName -eq $target.Type } | Select-Object -First 1
-        if ($null -eq $type) {
-            $errors.Add("Missing type: $($target.Type)")
-            continue
-        }
-
-        $methods = @($type.Methods | Where-Object { $_.Name -eq $target.Method })
-        if ($methods.Count -eq 0) {
-            $errors.Add("Missing method: $($target.Type).$($target.Method)")
-            continue
-        }
-
-        $expectedParameters = @($target.Parameters)
-        $hasCompatibleSignature = $false
-        foreach ($method in $methods) {
-            if ($method.Parameters.Count -ne $expectedParameters.Count) {
-                continue
-            }
-
-            $hasCompatibleSignature = $true
-            break
-        }
-
-        if (!$hasCompatibleSignature) {
-            $errors.Add("Incompatible signature: $($target.Type).$($target.Method)($($expectedParameters -join ', '))")
-        }
-    }
-
-    foreach ($requiredField in $requiredFields) {
-        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $requiredField.Type -or $_.FullName -eq $requiredField.Type } | Select-Object -First 1
-        if ($null -eq $type) {
-            $errors.Add("Missing field owner type: $($requiredField.Type)")
-            continue
-        }
-
-        $field = $type.Fields | Where-Object { $_.Name -eq $requiredField.Field } | Select-Object -First 1
-        if ($null -eq $field) {
-            $errors.Add("Missing field: $($requiredField.Type).$($requiredField.Field)")
-        }
-    }
-
-    if ($errors.Count -gt 0) {
-        throw "Harmony hook target validation failed:`n$($errors -join "`n")"
-    }
-
-    Write-Host "Validated Harmony hook targets against $AssemblyPath"
-}
-
-function Test-ScalerCoreHookTargets {
-    param(
-        [string]$AssemblyPath,
-        [string]$CecilPath
-    )
-
-    if (!(Test-Path $CecilPath)) {
-        Write-Warning "Mono.Cecil.dll not found; skipping ScalerCore hook target validation."
-        return
-    }
-
-    $assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($AssemblyPath)
-    $targets = @(
-        @{ Type = "ScalerCore.ScaleManager"; Method = "ApplyIfNotScaled"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "Restore"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "ForceRestore"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "UpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "ForceUpdateOptions"; Parameters = @("UnityEngine.GameObject", "ScalerCore.ScaleOptions") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "IsScaled"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "GetController"; Parameters = @("UnityEngine.GameObject") },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "get_AllowDeadHeads"; Parameters = @() },
-        @{ Type = "ScalerCore.ScaleManager"; Method = "set_AllowDeadHeads"; Parameters = @("System.Boolean") },
-        @{ Type = "ScalerCore.ScaleController"; Method = "get_CurrentOptions"; Parameters = @() },
-        @{ Type = "ScalerCore.Handlers.ScaleHandlerRegistry"; Method = "Register"; Parameters = @("ScalerCore.Handlers.IScaleHandler", "System.Func`2<UnityEngine.GameObject,System.Boolean>", "System.Int32") }
-    )
-    $requiredFields = @(
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "Factor" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "Speed" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "RestoreSpeed" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "AllowedTargets" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressValueDropExpand" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "PreserveMass" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressImpactFlash" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "SuppressCameraShake" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "IgnoreBonkExpand" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "RejectExternalApply" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "AudioPresence" },
-        @{ Type = "ScalerCore.ScaleOptions"; Field = "EnemyPhysicalFactorCap" },
-        @{ Type = "ScalerCore.ScaleTargets"; Field = "Players" }
-    )
-
-    $errors = New-Object System.Collections.Generic.List[string]
-    foreach ($target in $targets) {
-        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $target.Type -or $_.FullName -eq $target.Type } | Select-Object -First 1
-        if ($null -eq $type) {
-            $errors.Add("Missing type: $($target.Type)")
-            continue
-        }
-
-        $methods = @($type.Methods | Where-Object { $_.Name -eq $target.Method })
-        if ($methods.Count -eq 0) {
-            $errors.Add("Missing method: $($target.Type).$($target.Method)")
-            continue
-        }
-
-        $expectedParameters = @($target.Parameters)
-        $hasCompatibleSignature = $false
-        foreach ($method in $methods) {
-            if ($method.Parameters.Count -eq $expectedParameters.Count) {
-                $hasCompatibleSignature = $true
-                break
-            }
-        }
-
-        if (!$hasCompatibleSignature) {
-            $errors.Add("Incompatible signature: $($target.Type).$($target.Method)($($expectedParameters -join ', '))")
-        }
-    }
-
-    foreach ($requiredField in $requiredFields) {
-        $type = $assembly.MainModule.Types | Where-Object { $_.Name -eq $requiredField.Type -or $_.FullName -eq $requiredField.Type } | Select-Object -First 1
-        if ($null -eq $type) {
-            $errors.Add("Missing field owner type: $($requiredField.Type)")
-            continue
-        }
-
-        $field = $type.Fields | Where-Object { $_.Name -eq $requiredField.Field } | Select-Object -First 1
-        if ($null -eq $field) {
-            $errors.Add("Missing field: $($requiredField.Type).$($requiredField.Field)")
-        }
-    }
-
-    if ($errors.Count -gt 0) {
-        throw "ScalerCore hook target validation failed:`n$($errors -join "`n")"
-    }
-
-    Write-Host "Validated ScalerCore hook targets against $AssemblyPath"
-}
-
-Test-GameHookTargets -AssemblyPath (Join-Path $managed "Assembly-CSharp.dll") -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
-Test-ScalerCoreHookTargets -AssemblyPath $ScalerCoreDll -CecilPath (Join-Path $bepCore "Mono.Cecil.dll")
-
-$compilerModeArgs = if ($Configuration -ieq "Release") {
-    @("/optimize+", "/debug-")
+$dotnet = $null
+$command = Get-Command dotnet -ErrorAction SilentlyContinue
+if ($command) {
+    $dotnet = $command.Source
+} elseif (Test-Path (Join-Path $env:ProgramFiles "dotnet\dotnet.exe")) {
+    $dotnet = Join-Path $env:ProgramFiles "dotnet\dotnet.exe"
 } else {
-    @("/optimize-", "/debug:full")
+    throw ".NET SDK not found. Install it with: winget install Microsoft.DotNet.SDK.10"
 }
 
-& $csc /nologo /codepage:65001 /target:library $compilerModeArgs /nowarn:1701 /out:$pluginOut $refArgs $sources
+function Invoke-Dotnet {
+    param([string[]]$Arguments)
+    & $dotnet @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Assert-InsideRepository([string]$Path) {
+    $resolved = [System.IO.Path]::GetFullPath($Path)
+    if (!$resolved.StartsWith([System.IO.Path]::GetFullPath($root), [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to modify a path outside the repository: $resolved"
+    }
+}
+
+Write-Host "== Build ($Configuration)"
+Invoke-Dotnet @("build", $project, "-c", $Configuration)
+Invoke-Dotnet @("build", $toolProject, "-c", "Release")
+
+Write-Host "== Unit tests"
+if ($UpdateDocs) {
+    # InterfacesDocTests rewrites the config-schema block instead of failing when this is set.
+    $env:SHRINKCART_UPDATE_DOCS = "1"
+}
+try {
+    Invoke-Dotnet @("test", $testProject, "-c", $Configuration)
+} finally {
+    Remove-Item Env:SHRINKCART_UPDATE_DOCS -ErrorAction SilentlyContinue
+}
+
+if ($UpdateDocs) {
+    Write-Host "== Update generated docs"
+    Invoke-Dotnet @($toolDll, "docs", "--configuration", $Configuration)
+}
+
+$json = (& $dotnet msbuild $project -nologo "-p:Configuration=$Configuration" "-getProperty:Version" "-getProperty:TargetPath" "-getProperty:R2PluginsDir") -join "`n"
 if ($LASTEXITCODE -ne 0) {
-    throw "csc.exe failed with exit code $LASTEXITCODE"
+    throw "dotnet msbuild -getProperty failed: $json"
+}
+$properties = ($json | ConvertFrom-Json).Properties
+$version = $properties.Version
+$pluginDll = $properties.TargetPath
+
+Write-Host "== Package $modName $version"
+$dist = Join-Path $root "dist"
+$stage = Join-Path $dist "package"
+$zipPath = Join-Path $dist "$modName-$version.zip"
+Assert-InsideRepository $dist
+if (Test-Path $dist) {
+    Remove-Item -LiteralPath $dist -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+# Exactly five files at the ZIP root; the DLL sits at the root and r2modman installs it to BepInEx\plugins\<Team>-<Package>\.
+$files = [ordered]@{
+    "manifest.json" = Join-Path $root "package\manifest.json"
+    "README.md"     = Join-Path $root "package\README.md"
+    "icon.png"      = Join-Path $root "package\icon.png"
+    "CHANGELOG.md"  = Join-Path $root "CHANGELOG.md"
+    "$modName.dll"  = $pluginDll
+}
+foreach ($entry in $files.GetEnumerator()) {
+    Copy-Item -LiteralPath $entry.Value -Destination (Join-Path $stage $entry.Key) -Force
 }
 
-$pdbOut = [System.IO.Path]::ChangeExtension($pluginOut, ".pdb")
-if ($Configuration -ieq "Release" -and (Test-Path $pdbOut)) {
-    throw "Release build unexpectedly generated $pdbOut"
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($entry in $files.GetEnumerator()) {
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $stage $entry.Key), $entry.Key) | Out-Null
+    }
+} finally {
+    $zip.Dispose()
 }
+Write-Host "Packaged $zipPath"
 
-Copy-Item -LiteralPath (Join-Path $root "package\manifest.json") -Destination (Join-Path $distRoot "manifest.json") -Force
-Copy-Item -LiteralPath (Join-Path $root "package\README.md") -Destination (Join-Path $distRoot "README.md") -Force
-Copy-Item -LiteralPath (Join-Path $root "package\icon.png") -Destination (Join-Path $distRoot "icon.png") -Force
+Write-Host "== Validate"
+Invoke-Dotnet @($toolDll, "validate", "--configuration", $Configuration, "--zip", $zipPath)
 
-$repoChangelog = Join-Path $root "CHANGELOG.md"
-if (Test-Path $repoChangelog) {
-    Copy-Item -LiteralPath $repoChangelog -Destination (Join-Path $distRoot "CHANGELOG.md") -Force
-} else {
-    Write-Warning "CHANGELOG.md not found at repo root; skipping changelog packaging."
-}
+if ($InstallToProfile) {
+    $pluginsDir = $properties.R2PluginsDir
+    if (!(Test-Path $pluginsDir)) {
+        throw "Profile plugins directory not found: $pluginsDir (set R2ProfileDir in ShrinkCart.local.props)."
+    }
 
-$profilePluginDir = Join-Path $R2Profile "BepInEx\plugins\$modName"
-if ($InstallToProfile -and (Test-Path (Join-Path $R2Profile "BepInEx"))) {
-    New-Item -ItemType Directory -Force -Path $profilePluginDir | Out-Null
-    Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $profilePluginDir "$modName.dll") -Force
-    Write-Host "Installed to $profilePluginDir"
+    $target = Join-Path $pluginsDir $packageFolder
+    New-Item -ItemType Directory -Force -Path $target | Out-Null
+    foreach ($entry in $files.GetEnumerator()) {
+        Copy-Item -LiteralPath (Join-Path $stage $entry.Key) -Destination (Join-Path $target $entry.Key) -Force
+    }
+    Write-Host "Installed to $target"
+    Write-Host "Note: r2modman keeps listing the previously installed version; import the ZIP in r2modman to update its record."
+
+    $legacy = Join-Path $pluginsDir $modName
+    if (Test-Path (Join-Path $legacy "$modName.dll")) {
+        Write-Warning "Found an older manual install at $legacy; remove it to avoid loading ShrinkCart twice."
+    }
 }
 
 if ($PackageToDesktop) {
-    if (Test-Path $desktopZip) {
-        Remove-Item -LiteralPath $desktopZip -Force
-    }
-
-    $packageStage = Join-Path $root "dist_package"
-    if (Test-Path $packageStage) {
-        $resolvedStage = (Resolve-Path -LiteralPath $packageStage).Path
-        $resolvedRoot = (Resolve-Path -LiteralPath $root).Path
-        if (!$resolvedStage.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Refusing to clean package stage outside workspace: $resolvedStage"
-        }
-
-        Remove-Item -LiteralPath $packageStage -Recurse -Force
-    }
-
-    New-Item -ItemType Directory -Force -Path $packageStage | Out-Null
-    Copy-Item -LiteralPath (Join-Path $distRoot "manifest.json") -Destination (Join-Path $packageStage "manifest.json") -Force
-    Copy-Item -LiteralPath (Join-Path $distRoot "README.md") -Destination (Join-Path $packageStage "README.md") -Force
-    Copy-Item -LiteralPath (Join-Path $distRoot "icon.png") -Destination (Join-Path $packageStage "icon.png") -Force
-    if (Test-Path (Join-Path $distRoot "CHANGELOG.md")) {
-        Copy-Item -LiteralPath (Join-Path $distRoot "CHANGELOG.md") -Destination (Join-Path $packageStage "CHANGELOG.md") -Force
-    }
-    Copy-Item -LiteralPath $pluginOut -Destination (Join-Path $packageStage "$modName.dll") -Force
-
-    Add-Type -AssemblyName System.IO.Compression
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $zip = [System.IO.Compression.ZipFile]::Open($desktopZip, [System.IO.Compression.ZipArchiveMode]::Create)
-    try {
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "manifest.json"), "manifest.json") | Out-Null
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "README.md"), "README.md") | Out-Null
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "icon.png"), "icon.png") | Out-Null
-        if (Test-Path (Join-Path $packageStage "CHANGELOG.md")) {
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $packageStage "CHANGELOG.md"), "CHANGELOG.md") | Out-Null
-        }
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $pluginOut, "$modName.dll") | Out-Null
-    }
-    finally {
-        $zip.Dispose()
-    }
-
-    Write-Host "Packaged $desktopZip"
+    $desktopZip = Join-Path ([Environment]::GetFolderPath("Desktop")) "$modName-$version.zip"
+    Copy-Item -LiteralPath $zipPath -Destination $desktopZip -Force
+    Write-Host "Copied $desktopZip"
 }
 
-Write-Host "Built $pluginOut"
-Write-Host "Using ScalerCore: $ScalerCoreDll"
-Write-Host "Using REPOConfig: $REPOConfigDll"
+Write-Host "Done: $modName $version ($Configuration)"

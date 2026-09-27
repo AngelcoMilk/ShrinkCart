@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    构建期工具（不随 mod 发布）：
+      validate  从编译产物推导的全部构建期校验（Harmony 目标、非公开成员访问、依赖版本、版本号、打包布局、生成文档）
+      docs      重新生成 docs/INTERFACES.md 中由工具维护的 Hook 表与 GameMember 表
+      doctor    检查本机开发环境（SDK、本机 props、游戏目录、r2modman profile、依赖版本、打包素材）
+    用法见 docs/MAINTENANCE.md（通常由 build.ps1 调用）。
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ShrinkCart.BuildTools</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+  </ItemGroup>
+
+</Project>

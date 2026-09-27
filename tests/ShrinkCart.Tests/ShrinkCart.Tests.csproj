@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    纯逻辑（Domain）与配置（Config）的单元测试。以源码链接方式编入，因此这两层不能引用 Unity 场景类型、
+    Assembly-CSharp 或 ScalerCore——越界会让本项目直接编译失败。
+    以 net472 运行：BepInEx 5 在 .NET Framework 上可直接加载（与游戏内 Mono 相同的 API 面）。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>ShrinkCart.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\ShrinkCart\Domain\**\*.cs" LinkBase="Linked\Domain" />
+    <Compile Include="..\..\src\ShrinkCart\Config\**\*.cs" LinkBase="Linked\Config" />
+    <Compile Include="..\..\src\ShrinkCart\Core\FeatureId.cs" LinkBase="Linked\Core" />
+    <Compile Include="..\..\src\ShrinkCart\Core\ModLog.cs" LinkBase="Linked\Core" />
+    <None Include="..\fixtures\config\*.cfg" LinkBase="fixtures\config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+    <PackageReference Include="NUnit" Version="4.*" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.*" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    BepInEx 5 的 BepInEx.dll 引用 UnityEngine；测试进程需要能加载它（本机游戏目录，复制到 bin，不入库）。
+    Unity 程序集引用强签名的 netstandard 2.1.0.0，而 .NET Framework 自带的是 2.0.0.0，所以还要带上游戏自带的
+    netstandard.dll（只复制，不参与编译）。
+  -->
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(REPOManagedDir)UnityEngine.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(REPOManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="$(REPOManagedDir)netstandard.dll" Link="netstandard.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    BepInEx.Core 包的 SkipBepinRefs 目标会把 BepInEx / HarmonyX 从输出目录移除（插件在游戏里由 BepInEx 宿主提供）。
+    测试进程没有宿主，这里把它们加回来。
+  -->
+  <Target Name="ShrinkCartTestsCopyBepInEx" AfterTargets="SkipBepinRefs">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'BepInEx.BaseLib' Or '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'HarmonyX'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

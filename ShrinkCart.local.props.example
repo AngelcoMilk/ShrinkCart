@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    复制为 ShrinkCart.local.props（已 git-ignore）并改成本机路径。
+    R2ProfileDir 必须是装有 manifest 所列依赖版本（ScalerCore / REPOConfig）的 r2modman profile。
+  -->
+  <PropertyGroup>
+    <REPOGameDir>D:\SteamLibrary\steamapps\common\REPO</REPOGameDir>
+    <R2ProfileDir>$(APPDATA)\r2modmanPlus-local\REPO\profiles\REPO</R2ProfileDir>
+  </PropertyGroup>
+</Project>

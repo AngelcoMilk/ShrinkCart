@@ -22,3 +22,11 @@ Assembly-CSharp.dll
 # User-local generated profiles and exports.
 BepInEx/config/AngelcoMilk.ShrinkCart.cfg
 
+
+
+# .NET SDK build output and local machine settings.
+bin/
+obj/
+TestResults/
+*.binlog
+ShrinkCart.local.props

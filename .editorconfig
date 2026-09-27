@@ -1,0 +1,18 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# UnityEngine.Object 重载了 == null（已销毁对象视为 null），?. / ?? / is null 会绕过它。
+dotnet_diagnostic.UNT0007.severity = error
+dotnet_diagnostic.UNT0008.severity = error
+dotnet_diagnostic.UNT0029.severity = error
+
+[*.{csproj,props,targets,json,yml}]
+indent_style = space
+indent_size = 2
