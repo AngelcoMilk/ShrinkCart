@@ -15,7 +15,7 @@ namespace ShrinkCart
     /// 任一步骤抛出异常时插件保持停用（所有 patch 在 Current 为 null 时直接放行原版逻辑）。
     /// </summary>
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-    [BepInDependency("Vippy.ScalerCore", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("Vippy.ScalerCore", "1.1.1")]
     [BepInDependency("nickklmao.repoconfig", BepInDependency.DependencyFlags.HardDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {

@@ -149,11 +149,11 @@ namespace ShrinkCart.Game
             return cart.inCart;
         }
 
-        [GameMember(typeof(PlayerAvatar), "collider", typeof(Collider), FeatureId.PlayerScaling)]
+        [GameMember(typeof(PlayerAvatar), "playerCollider", typeof(Collider), FeatureId.PlayerScaling)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static Collider AvatarCollider(PlayerAvatar avatar)
         {
-            return avatar.collider;
+            return avatar.playerCollider;
         }
     }
 }

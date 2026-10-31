@@ -23,11 +23,11 @@
 
 | 组件 | 版本 | 说明 |
 |---|---|---|
-| R.E.P.O. | v0.4.4.x（Unity Mono） | 编译时引用本机游戏的 `Assembly-CSharp.dll`（publicize 后的副本只在 `obj/`） |
+| R.E.P.O. | v0.5.0（Unity 6000.3，Mono） | 编译时引用本机游戏的 `Assembly-CSharp.dll`（publicize 后的副本只在 `obj/`） |
 | BepInEx | 5.4.23（BepInExPack 5.4.2305） | 插件入口、配置文件、日志 |
 | HarmonyX | 2.9 | 运行时补丁（由 BepInEx 提供） |
-| ScalerCore | ≥ 1.0.6 | 全部缩放行为与联机同步；行为契约见 [INTERFACES.md §3](INTERFACES.md#3-scalercore-契约) |
-| REPOConfig | ≥ 1.2.6 | 游戏内配置界面；ShrinkCart 不调用它的 API，只遵守它的显示约定 |
+| ScalerCore | ≥ 1.1.1 | 全部缩放行为与联机同步；行为契约见 [INTERFACES.md §3](INTERFACES.md#3-scalercore-契约) |
+| REPOConfig | ≥ 1.2.7（`REPOModding-REPOConfig`） | 游戏内配置界面；ShrinkCart 不调用它的 API，只遵守它的显示约定 |
 | 构建 | .NET SDK 10，目标 `netstandard2.1` | 单元测试 `net472`，构建工具 `net10.0` |
 
 ## 3. 网络模型
@@ -238,7 +238,7 @@ sequenceDiagram
 
 - 进车时的动态检查：
   - 分类启用；
-  - 物体未 dead、未被装备、不是 kinematic；
+  - 物体未 dead、未被装备、没有玩家坐在上面（雪地摩托等可乘坐的贵重物）、不是 kinematic；
   - 不在重缩冷却中；
   - 没有被其他来源缩放。
 - 通过检查后缩小，并开始跟踪。代币箱需要先确认 `ScaleController` 已就绪。
@@ -246,7 +246,11 @@ sequenceDiagram
 - 周期检查（按「性能」分组的间隔）依次处理：
   - 目标已销毁：放弃跟踪；
   - 缩放已被 ScalerCore 自行解除（如碰撞恢复）：放弃跟踪，进入重缩冷却，冷却结束后如果仍在车内会再次缩小；
-  - 被装备：先恢复。
+  - 被装备：先恢复；
+  - 可乘坐的贵重物：续期禁止乘坐。
+- 可乘坐的贵重物（`SemiMounting`）：本地玩家乘坐时模型可能脱离根节点（`meshFollowCamera`），下车归位时按世界尺寸换算，这期间根节点尺寸一变，模型比例就会永久错乱，而且发生在骑手那台机器上，主机修不了。所以：
+  - 有人坐着不缩小，下车后等 1.5 秒模型归位再缩小；
+  - 缩小期间和恢复动画期间，主机用 `OverrideDisableMounting` 禁止上座，要骑得先拿出车。只有主机能分配座位，所以只在主机设置。
 
 **CartNestingGuard（车类物品拦截）**
 
@@ -307,6 +311,7 @@ stateDiagram-v2
   因为 ScalerCore 只在 `Factor ≤ 0` 时替换倍率，所以倍率不一致就说明缩放已被其他来源替换（例如缩小枪）。0.2.x 用"缩放参数长得像 ShrinkCart"来认领别人的缩放，这种做法已删除。
 - **外部解除**：`IsOurs(target)` 返回 `false` 时，说明 ScalerCore 已自行恢复或被其他来源接管。功能只放弃跟踪，不去恢复：物品进入重缩冷却，玩家推进循环。
 - **全局开关**：ScalerCore 的 `AllowDeadHeads` 是全局静态开关，ShrinkCart 只在缩小头颅的那一次 `ApplyIfNotScaled` 调用期间把它设为 `true`，并在 `finally` 中还原。这个做法依赖 [INTERFACES.md §3.3](INTERFACES.md#33-shrinkcart-依赖的-scalercore-行为) 中核实过的同步调用语义。
+- **原生重生**：ScalerCore 1.1 的 `NativeSync`（实验开关，默认关闭）会销毁目标并生成新物体，新物体的实例 ID 不同，ShrinkCart 的所有权和离车跟踪都会失效。所以网关施加和恢复缩放时都临时关闭这个开关，并在 `finally` 中还原，ShrinkCart 的缩放全程走 RPC。代价是没装 ScalerCore 的玩家看不到这些缩放，这也是上游对车内物品的处理方式。
 - **恢复方式**：物品和代币箱用 `UpdateOptions` + `Restore`；玩家和死亡头颅用 `ForceUpdateOptions` + `ForceRestore`（沿用 0.2.x 的实测选择）。
 
 ## 9. Hook 频率与开销预算
@@ -348,7 +353,7 @@ stateDiagram-v2
 
 | 缓存 | 位置 | 失效或清理时机 |
 |---|---|---|
-| 对象分类（种类、分类、敌人/头颅引用、是否商店用品） | `ObjectClassifier` | 换关时清空；按实例 ID 缓存，实例 ID 在单局内不复用 |
+| 对象分类（种类、分类、敌人/头颅/乘坐组件引用、是否商店用品） | `ObjectClassifier` | 换关时清空；按实例 ID 缓存，实例 ID 在单局内不复用 |
 | 分类倍率与"是否缩小" | `ObjectInfo` | `ScalingConfigVersion` 变化时重算（任意配置变化都会递增） |
 | 车辆登记（含延迟解析的 inCart 体积） | `CartRegistry` | 车被销毁后，每秒清理一次时移除；换关时清空 |
 | 主机判定 | `Authority` | 0.25 秒（unscaled time） |

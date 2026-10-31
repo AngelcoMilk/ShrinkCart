@@ -7,7 +7,7 @@
 
 <br>
 
-适配 R.E.P.O. v0.4.4.x 的购物车缩小搬运模组——物品进车自动缩小，离车恢复原尺寸
+适配 R.E.P.O. v0.5.0 的购物车缩小搬运模组——物品进车自动缩小，离车恢复原尺寸
 
 <blockquote>
 ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运；物品真正离开购物车后会恢复原尺寸<br><br>
@@ -115,7 +115,7 @@ ShrinkCart 会在物品放入 C.A.R.T / 购物车后自动缩小，方便搬运�
 
 ## 安装
 
-**推荐**：通过 Thunderstore Mod Manager / r2modman 安装（依赖 `BepInEx-BepInExPack-5.4.2305`、[Vippy-ScalerCore-1.0.6](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)、`nickklmao-REPOConfig-1.2.6`）
+**推荐**：通过 Thunderstore Mod Manager / r2modman 安装（依赖 `BepInEx-BepInExPack-5.4.2305`、[Vippy-ScalerCore-1.1.1](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/)、`REPOModding-REPOConfig-1.2.7`）
 
 **手动安装**：
 
@@ -234,7 +234,7 @@ Berserker 敌人球倍率 = 0.45
 
 <br>
 
-A cart-scaling hauling mod for R.E.P.O. v0.4.4.x — items shrink automatically when placed into the cart and restore to full size after leaving
+A cart-scaling hauling mod for R.E.P.O. v0.5.0 — items shrink automatically when placed into the cart and restore to full size after leaving
 
 <blockquote>
 ShrinkCart shrinks supported objects when placed into a C.A.R.T. / shopping cart and restores them after they truly leave<br><br>
@@ -344,7 +344,7 @@ Configuration is provided through REPOConfig. Switch to English in the "Language
 
 ## Installation
 
-**Recommended**: Install via Thunderstore Mod Manager / r2modman (requires `BepInEx-BepInExPack-5.4.2305`, [Vippy-ScalerCore-1.0.6](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/), `nickklmao-REPOConfig-1.2.6`)
+**Recommended**: Install via Thunderstore Mod Manager / r2modman (requires `BepInEx-BepInExPack-5.4.2305`, [Vippy-ScalerCore-1.1.1](https://thunderstore.io/c/repo/p/Vippy/ScalerCore/), `REPOModding-REPOConfig-1.2.7`)
 
 **Manual**:
 

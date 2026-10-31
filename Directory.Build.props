@@ -19,6 +19,6 @@
     <R2PluginsDir>$([MSBuild]::EnsureTrailingSlash('$(R2ProfileDir)'))BepInEx\plugins\</R2PluginsDir>
     <!-- 依赖只从指定 profile 的 <Team>-<Package> 目录解析，不递归搜索、不回退共享 cache。 -->
     <ScalerCoreDir Condition="'$(ScalerCoreDir)' == ''">$(R2PluginsDir)Vippy-ScalerCore\</ScalerCoreDir>
-    <REPOConfigDir Condition="'$(REPOConfigDir)' == ''">$(R2PluginsDir)nickklmao-REPOConfig\</REPOConfigDir>
+    <REPOConfigDir Condition="'$(REPOConfigDir)' == ''">$(R2PluginsDir)REPOModding-REPOConfig\</REPOConfigDir>
   </PropertyGroup>
 </Project>

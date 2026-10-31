@@ -14,9 +14,15 @@ namespace ShrinkCart.Features
     /// 车内物品缩小：物品进车（trigger 或原版扫描看到）时缩小；真正离车满防抖时间、被装备或目标销毁时恢复/放弃；
     /// 缩放被 ScalerCore 自行解除（如碰撞恢复）时放弃跟踪并进入重缩冷却，冷却后若仍在车内会再次缩小。
     /// 离车判定见 <see cref="PresenceTracker"/>，到期即恢复；其余周期检查的节奏由「性能」分组配置控制（<see cref="ScanCadence"/>）。
+    /// <para>可乘坐的贵重物（SemiMounting）：本地玩家乘坐时模型可能脱离根节点，下车归位时按世界尺寸换算，
+    /// 这期间根节点尺寸一变，模型比例就会永久错乱。所以有人坐着不缩小，下车后等模型归位再缩小；
+    /// 缩放及恢复动画期间禁止乘坐。主机决定谁能上座，只在主机设置即可。</para>
     /// </summary>
     internal sealed class ItemShrinkFeature : IFeature
     {
+        private const float MountSettleSeconds = 1.5f;
+        private const float MountHoldMarginSeconds = 0.25f;
+
         private readonly CartRegistry _carts;
         private readonly ObjectClassifier _classifier;
         private readonly ScalerCoreGateway _scaling;
@@ -99,6 +105,12 @@ namespace ShrinkCart.Features
                 return;
             }
 
+            if (info.Mounting != null && info.Mounting.AnyoneSeated())
+            {
+                _reshrinkCooldown.Start(info.Id, now, MountSettleSeconds);
+                return;
+            }
+
             if (item.dead ||
                 (info.Equippable != null && info.Equippable.IsEquipped()) ||
                 (item.rb != null && item.rb.isKinematic) ||
@@ -133,7 +145,8 @@ namespace ShrinkCart.Features
             }
 
             bool wasEmpty = _items.Count == 0;
-            _items[info.Id] = new TrackedItem(target, info.Equippable);
+            TrackedItem tracked = new TrackedItem(target, info.Equippable, info.Mounting, factor);
+            _items[info.Id] = tracked;
             _presence.Track(info.Id, cartId, now);
             if (wasEmpty)
             {
@@ -141,6 +154,7 @@ namespace ShrinkCart.Features
                 _nextMaintenance = Math.Min(_nextMaintenance, now + CurrentInterval());
             }
 
+            HoldMountingUntilNextCheck(tracked, now);
             ModLog.Debug("Shrunk " + target.name + " as " + info.Category + " factor=" + factor.ToString("0.###"));
         }
 
@@ -157,7 +171,7 @@ namespace ShrinkCart.Features
                 }
             }
 
-            // 其余检查（目标销毁、被外部恢复、装备前恢复）按「性能」分组的维护间隔进行。
+            // 其余检查（目标销毁、被外部恢复、装备前恢复、禁止乘坐）按「性能」分组的维护间隔进行。
             if (now < _nextMaintenance)
             {
                 return;
@@ -189,6 +203,7 @@ namespace ShrinkCart.Features
                 if (!_scaling.IsOurs(tracked.Target))
                 {
                     ModLog.Debug("Scale was released outside ShrinkCart, re-shrink allowed after cooldown: " + tracked.Target.name);
+                    HoldMountingWhileRestoring(tracked);
                     Drop(id);
                     _reshrinkCooldown.Start(id, now, ModConfig.SafeReshrinkCooldownSeconds());
                     continue;
@@ -198,7 +213,10 @@ namespace ShrinkCart.Features
                 {
                     ModLog.Debug("Restoring tracked equippable before equipped use: " + tracked.Target.name);
                     Restore(id, now);
+                    continue;
                 }
+
+                HoldMountingUntilNextCheck(tracked, now);
             }
         }
 
@@ -229,7 +247,26 @@ namespace ShrinkCart.Features
 
             if (_scaling.Restore(tracked.Target, ModConfig.SafeRestoreScaleSpeed()) == RestoreResult.Restored)
             {
+                HoldMountingWhileRestoring(tracked);
                 ModLog.Debug("Restored " + tracked.Target.name + " speed=" + ModConfig.SafeRestoreScaleSpeed().ToString("0.###"));
+            }
+        }
+
+        private void HoldMountingUntilNextCheck(TrackedItem tracked, float now)
+        {
+            if (tracked.Mounting != null)
+            {
+                tracked.Mounting.OverrideDisableMounting(_nextMaintenance - now + MountHoldMarginSeconds);
+            }
+        }
+
+        // ScalerCore 的恢复动画时长 = (1 - 倍率) / 恢复速度。
+        private static void HoldMountingWhileRestoring(TrackedItem tracked)
+        {
+            if (tracked.Mounting != null)
+            {
+                tracked.Mounting.OverrideDisableMounting(
+                    (1f - tracked.Factor) / ModConfig.SafeRestoreScaleSpeed() + MountHoldMarginSeconds);
             }
         }
 
@@ -275,15 +312,21 @@ namespace ShrinkCart.Features
 
         private sealed class TrackedItem
         {
-            internal TrackedItem(GameObject target, ItemEquippable equippable)
+            internal TrackedItem(GameObject target, ItemEquippable equippable, SemiMounting mounting, float factor)
             {
                 Target = target;
                 Equippable = equippable;
+                Mounting = mounting;
+                Factor = factor;
             }
 
             internal GameObject Target { get; }
 
             internal ItemEquippable Equippable { get; }
+
+            internal SemiMounting Mounting { get; }
+
+            internal float Factor { get; }
         }
     }
 }

@@ -8,8 +8,8 @@
 1. 安装 .NET SDK 10：`winget install Microsoft.DotNet.SDK.10`。仓库根目录的 `global.json` 锁定 SDK 主版本，允许自动使用更新的功能版本。
 2. 准备 r2modman 开发 profile，建议与日常游玩的 profile 分开，只装最小依赖集。需要安装：
    - `BepInEx-BepInExPack` 5.4.2305
-   - `Vippy-ScalerCore` ≥ 1.0.6
-   - `nickklmao-REPOConfig` ≥ 1.2.6（会同时装上 MenuLib）
+   - `Vippy-ScalerCore` ≥ 1.1.1
+   - `REPOModding-REPOConfig` ≥ 1.2.7（会同时装上 `REPOModding-MenuLib`）
 3. 复制 `ShrinkCart.local.props.example` 为 `ShrinkCart.local.props`（已被 git 忽略），填写本机路径：
    - `REPOGameDir`：游戏目录，例如 `D:\SteamLibrary\steamapps\common\REPO`
    - `R2ProfileDir`：开发 profile 目录，例如 `%APPDATA%\r2modmanPlus-local\REPO\profiles\<名称>`
@@ -94,7 +94,7 @@ docs/                            架构、接口、维护文档与开发规范
 
 ## 4. 游戏更新流程
 
-1. 用 Steam 更新游戏，启动一次，确认 BepInEx 能正常加载。
+1. 更新前先把 `REPO_Data\Managed\Assembly-CSharp.dll` 复制到仓库外的本机目录，留作新旧 IL 对比的基线（`obj/` 里的副本下次构建就会被覆盖）。然后用 Steam 更新游戏，启动一次，确认 BepInEx 能正常加载。
 2. 运行 `.\build.ps1`：
    - 编译会引用新的 `Assembly-CSharp`，被改名或删除的字段和方法直接变成**编译错误**，错误位置在 `GameAccess` 或使用公开成员的代码里；
    - `validate` 会报告 patch 目标缺失、出现重载、参数改名，以及原来公开的成员变成非公开等问题。
@@ -117,7 +117,9 @@ docs/                            架构、接口、维护文档与开发规范
    - `ApplyIfNotScaled` 是否仍同步调用 `DispatchShrink`；
    - `DispatchShrink` 是否仍先判定主机、并且是 `AllowDeadHeads` 的唯一读取者；
    - `DispatchExpand` 是否仍不读取 `AllowDeadHeads`；
-   - `Factor` 是否仍只在 `≤ 0` 时被替换。
+   - `Factor` 是否仍只在 `≤ 0` 时被替换；
+   - `NativeSync` 是否仍只由 `NativeRespawn.Decide` 读取，派发时读到 `false` 是否仍会清除延迟重生标记；
+   - 原生重生的默认值是否已改为开启（`RespawnRules.NativeSyncDefault`）。
 
    任何一条变化，都要重新评估 `ScalerCoreGateway` 的临时开关与所有权核对。
 4. 游戏内重点测试：物品缩小和恢复、死亡头颅、玩家循环（受伤恢复）、代币箱。
@@ -161,6 +163,8 @@ docs/                            架构、接口、维护文档与开发规范
 | 敌人进车 → 死亡 → 重生后再次进车 | 两次都被秒杀 | E1 E2 |
 | 站在车中心 | 循环：缩小 → 原样 → 增大 → 原样；短暂跳起不打断；受伤后恢复，循环照常推进 | E1 E2 |
 | 开启死亡头颅功能：头颅进车、离车、进入提取点、复活 | 缩小；以及离车、进入提取点、复活前恢复；调试日志显示 AllowDeadHeads 已还原 | E1 E2 |
+| 骑雪地摩托或高尔夫球车进车，下车；抓车内已缩小的同类贵重物；拿出车恢复后再骑 | 有人坐着时不缩小；下车约 1.5 秒后缩小；缩小时和恢复动画中上不了座，能正常拖动；恢复后能骑，车身模型比例正常 | E1 E2 |
+| 主机打开 ScalerCore 的 `Native scale respawn`，贵重物滚进车、抓着放进车、拿出车 | 日志没有这些物品的 `[SC] native respawn`；离车正常恢复，没有物品一直保持缩小 | E2 E3 |
 | 换关 | 所有缩放恢复，新关卡正常工作 | E1 E2 |
 | 在 REPOConfig 中切换总开关和各功能开关 | 关闭时恢复已缩放的对象，重新打开后正常工作 | E1 E2 |
 | 切换配置语言并重启 | 所有值保留，键名变为另一种语言 | E1 |

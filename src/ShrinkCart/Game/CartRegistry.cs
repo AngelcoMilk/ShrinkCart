@@ -41,7 +41,7 @@ namespace ShrinkCart.Game
 
         internal void RegisterExisting()
         {
-            PhysGrabCart[] carts = UnityEngine.Object.FindObjectsOfType<PhysGrabCart>();
+            PhysGrabCart[] carts = UnityEngine.Object.FindObjectsByType<PhysGrabCart>(FindObjectsSortMode.None);
             for (int i = 0; i < carts.Length; i++)
             {
                 GetOrRegister(carts[i]);

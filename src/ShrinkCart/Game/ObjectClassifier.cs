@@ -32,6 +32,7 @@ namespace ShrinkCart.Game
         internal Enemy Enemy;
         internal PlayerDeathHead Head;
         internal ItemEquippable Equippable;
+        internal SemiMounting Mounting;
         internal ShrinkCategory Category;
         internal bool IsShopItem;
         internal int ShrinkConfigVersion = -1;
@@ -125,6 +126,7 @@ namespace ShrinkCart.Game
             }
 
             info.Equippable = item.GetComponent<ItemEquippable>();
+            info.Mounting = item.GetComponent<SemiMounting>();
             if (TryResolveCategory(item, info.CleanName, out ShrinkCategory category))
             {
                 info.Kind = ObjectKind.ShrinkCandidate;

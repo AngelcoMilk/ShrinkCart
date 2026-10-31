@@ -6,7 +6,7 @@
     <RootNamespace>ShrinkCart</RootNamespace>
     <Product>ShrinkCart</Product>
     <!-- 版本号唯一来源：构建时会校验 package/manifest.json 与 CHANGELOG.md 顶部版本与此一致。 -->
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <BepInExPluginGuid>AngelcoMilk.ShrinkCart</BepInExPluginGuid>
     <BepInExPluginName>ShrinkCart</BepInExPluginName>
     <!-- 使用 publicize 后的 Assembly-CSharp 需要允许 unsafe（publicizer 会注入 IgnoresAccessChecksTo）。 -->

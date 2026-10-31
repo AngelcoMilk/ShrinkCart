@@ -64,12 +64,12 @@
 | `PlayerDeathHead.physGrabObject` | field | `PhysGrabObject` | internal | `HeadPhysGrabObject` | DeadHeadShrink |
 | `PlayerDeathHead.triggered` | field | `bool` | internal | `IsHeadTriggered` | DeadHeadShrink |
 | `PhysGrabCart.inCart` | field | `Transform` | internal | `InCartVolume` | PlayerScaling |
-| `PlayerAvatar.collider` | field | `Collider` | private | `AvatarCollider` | PlayerScaling |
+| `PlayerAvatar.playerCollider` | field | `Collider` | private | `AvatarCollider` | PlayerScaling |
 <!-- END GENERATED: game-members -->
 
 ## 3. ScalerCore 契约
 
-最低版本：**ScalerCore 1.0.6**（`package/manifest.json` 依赖 `Vippy-ScalerCore-1.0.6`）。只有 `ShrinkCart.Scaling.ScalerCoreGateway` 可以调用 `ScaleManager`，这由构建期的分层规则强制。
+最低版本：**ScalerCore 1.1.1**（`package/manifest.json` 依赖 `Vippy-ScalerCore-1.1.1`，`[BepInDependency]` 同样要求 1.1.1）。只有 `ShrinkCart.Scaling.ScalerCoreGateway` 可以调用 `ScaleManager`，这由构建期的分层规则强制。
 
 ### 3.1 使用的 API
 
@@ -81,6 +81,7 @@
 | `ScaleManager.UpdateOptions` / `Restore` | 物品、代币箱的恢复 |
 | `ScaleManager.ForceUpdateOptions` / `ForceRestore` | 玩家、死亡头颅的恢复 |
 | `ScaleManager.AllowDeadHeads`（静态） | 只在缩小头颅的那次调用期间临时设为 `true`，`finally` 中还原 |
+| `ScaleManager.NativeSync`（静态） | 只在 ShrinkCart 施加或恢复缩放的那次调用期间临时设为 `false`，`finally` 中还原，所以这些物体不会被原生重生替换 |
 | `ScaleHandlerRegistry.Register(IScaleHandler, Func<GameObject,bool>, int)` | 注册代币箱的空 handler（优先级 -10），让 ScalerCore 认领代币箱 |
 | `ScaleController`（组件） | 代币箱生成时由 ShrinkCart 挂上（所有端） |
 
@@ -105,13 +106,14 @@
 
 ### 3.3 ShrinkCart 依赖的 ScalerCore 行为
 
-以下行为已在 1.0.6 的 IL 中核实。升级 ScalerCore 时必须重新核对，流程见 [MAINTENANCE.md §5](MAINTENANCE.md#5-依赖更新流程)。
+以下行为已在 1.1.1 中核实（第 1–3、6 条核对 IL，第 4、5 条核对同版本源码）。升级 ScalerCore 时必须重新核对，流程见 [MAINTENANCE.md §5](MAINTENANCE.md#5-依赖更新流程)。
 
 1. `ApplyIfNotScaled` 在同一调用栈内同步调用 `DispatchShrink`。所以在调用前后临时开关 `AllowDeadHeads` 是有效的。
 2. `DispatchShrink` 先检查 `IsMasterClientOrSingleplayer`，然后读取 `AllowDeadHeads`；它是这个开关的唯一读取者。
 3. `DispatchExpand`（恢复路径）不读取 `AllowDeadHeads`。所以恢复头颅不需要打开开关。
 4. `Factor` 和 `Speed` 只在 `≤ 0` 时才会被替换为默认值。因此 `CurrentOptions.Factor` 会原样保留 ShrinkCart 传入的倍率，所有权核对依赖这一点。
 5. 缩放派发只在主机执行，结果通过 ScalerCore 自己的 RPC 同步到客户端。
+6. `ScaleManager.NativeSync` 只被 `NativeRespawn.Decide` 读取。`Decide` 只在 `DispatchShrink`、`TryNativeRestore`（来自 `DispatchExpand` / `DispatchExpandNow`）和 `TickDeferredRespawn` 中调用。前两者与 `ScaleManager` 的调用在同一调用栈内，开关关闭时判定结果不走重生，并清除延迟重生标记，所以 `TickDeferredRespawn` 也不会替换这个物体。
 
 ## 4. REPOConfig 与配置文件契约
 
@@ -120,7 +122,8 @@
   - 每个配置项有稳定的语言无关 ID（见下表），迁移、测试和文档都使用这个 ID。
   - 切换语言时，旧语言键的值会迁移到新语言键，值不会丢失。
 - `AcceptableValueRange<float>` 显示为滑条，`AcceptableValueList<string>` 显示为下拉框（配置语言）。
-- 描述中带 `HideFromREPOConfig` 标签的条目不会在 REPOConfig 中显示（REPOConfig 1.2.6 识别 `HideFromREPOConfig` / `HideREPOConfig`）。schema 版本条目使用这个标签。
+- REPOConfig 现在由 `REPOModding` 团队维护（Thunderstore 包 `REPOModding-REPOConfig`，`nickklmao` 的包已弃用）。插件 GUID 仍是 `nickklmao.repoconfig`，`[BepInDependency]` 按这个 GUID 声明。
+- 描述中带 `HideFromREPOConfig` 标签的条目不会在 REPOConfig 中显示（REPOConfig 1.2.7 识别 `HideFromREPOConfig` / `HideREPOConfig`）。schema 版本条目使用这个标签。
 - 所有数值在读取和写入时都规整为两位小数，避免滑条的浮点误差（如 `0.3999999`）落盘后破坏 REPOConfig 的精度推断。
 - 在游戏中修改任意配置都会触发 `SettingChanged`：
   - `ModConfig.ScalingConfigVersion` 递增，对象分类缓存里的倍率随之刷新；
